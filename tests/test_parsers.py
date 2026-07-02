@@ -18,6 +18,38 @@ def test_parse_nord_pool_converts_to_eur_kwh() -> None:
     assert prices[0].price == 0.1015
 
 
+def test_parse_nord_pool_aggregates_quarter_hour_prices_to_hourly_average() -> None:
+    payload = {
+        "multiAreaEntries": [
+            {
+                "deliveryStart": "2026-07-02T10:00:00Z",
+                "deliveryEnd": "2026-07-02T10:15:00Z",
+                "entryPerArea": {"NL": 100},
+            },
+            {
+                "deliveryStart": "2026-07-02T10:15:00Z",
+                "deliveryEnd": "2026-07-02T10:30:00Z",
+                "entryPerArea": {"NL": 200},
+            },
+            {
+                "deliveryStart": "2026-07-02T10:30:00Z",
+                "deliveryEnd": "2026-07-02T10:45:00Z",
+                "entryPerArea": {"NL": 300},
+            },
+            {
+                "deliveryStart": "2026-07-02T10:45:00Z",
+                "deliveryEnd": "2026-07-02T11:00:00Z",
+                "entryPerArea": {"NL": 400},
+            },
+        ]
+    }
+
+    prices = parse_nord_pool(payload, "NL")
+
+    assert len(prices) == 1
+    assert prices[0].price == 0.25
+
+
 def test_parse_energy_charts_filters_day_and_converts_to_eur_kwh() -> None:
     july_2 = int(datetime(2026, 7, 2, tzinfo=timezone.utc).timestamp())
     july_3 = int(datetime(2026, 7, 3, tzinfo=timezone.utc).timestamp())

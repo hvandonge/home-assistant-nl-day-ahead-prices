@@ -1,4 +1,11 @@
-from custom_components.nl_day_ahead_prices.models import calculate_all_in_price, convert_to_eur_kwh
+from datetime import datetime, timezone
+
+from custom_components.nl_day_ahead_prices.models import (
+    PriceEntry,
+    calculate_all_in_price,
+    convert_to_eur_kwh,
+    next_hour_price,
+)
 
 
 def test_convert_eur_mwh_to_eur_kwh() -> None:
@@ -12,3 +19,11 @@ def test_convert_eur_kwh_is_unchanged() -> None:
 def test_all_in_formula() -> None:
     assert calculate_all_in_price(0.1, 0.1108, 0.01653, 0.21) == 0.2308013
 
+
+def test_next_hour_price_uses_next_full_hour_entry() -> None:
+    prices = [
+        PriceEntry(datetime(2026, 7, 2, 10, tzinfo=timezone.utc), 0.10),
+        PriceEntry(datetime(2026, 7, 2, 11, tzinfo=timezone.utc), 0.20),
+    ]
+
+    assert next_hour_price(prices, datetime(2026, 7, 2, 10, 12, tzinfo=timezone.utc)) == 0.20

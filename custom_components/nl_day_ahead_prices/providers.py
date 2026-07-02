@@ -194,9 +194,14 @@ async def async_fetch_with_fallback(
 
 
 def parse_nord_pool(payload: Any, area: str) -> list[PriceEntry]:
-    """Parse Nord Pool's public day-ahead payload."""
+    """Parse Nord Pool's public day-ahead payload.
+
+    Nord Pool can return 15-minute MTU rows for NL. Home Assistant sensors in
+    this integration expose hourly prices, so multiple rows in the same hour
+    are aggregated with a duration-weighted average.
+    """
     entries = payload.get("multiAreaEntries") or payload.get("MultiAreaEntries") or []
-    prices: list[PriceEntry] = []
+    hourly_totals: dict[datetime, tuple[float, float]] = {}
     for row in entries:
         price_value = row.get("entryPerArea", {}).get(area)
         if price_value is None:
@@ -206,8 +211,22 @@ def parse_nord_pool(payload: Any, area: str) -> list[PriceEntry]:
         start = row.get("deliveryStart") or row.get("DeliveryStart") or row.get("time")
         if not start:
             continue
-        prices.append(PriceEntry(datetime.fromisoformat(start), convert_to_eur_kwh(float(price_value), "EUR/MWh")))
-    return sorted(prices, key=lambda entry: entry.time)
+        start_dt = _parse_datetime(start)
+        end = row.get("deliveryEnd") or row.get("DeliveryEnd")
+        end_dt = _parse_datetime(end) if end else start_dt + timedelta(hours=1)
+        hour_start = start_dt.replace(minute=0, second=0, microsecond=0)
+        duration = max((end_dt - start_dt).total_seconds(), 0)
+        if duration == 0:
+            duration = 3600
+        price = convert_to_eur_kwh(float(price_value), "EUR/MWh")
+        weighted_total, duration_total = hourly_totals.get(hour_start, (0.0, 0.0))
+        hourly_totals[hour_start] = (weighted_total + price * duration, duration_total + duration)
+
+    return [
+        PriceEntry(hour, weighted_total / duration_total)
+        for hour, (weighted_total, duration_total) in sorted(hourly_totals.items(), key=lambda item: item[0])
+        if duration_total
+    ]
 
 
 def parse_energy_charts(payload: Any, target_day: date) -> list[PriceEntry]:
@@ -229,6 +248,11 @@ def parse_energy_charts(payload: Any, target_day: date) -> list[PriceEntry]:
         if dt.date() == target_day:
             prices.append(PriceEntry(dt, convert_to_eur_kwh(float(value), "EUR/MWh")))
     return sorted(prices, key=lambda entry: entry.time)
+
+
+def _parse_datetime(value: str) -> datetime:
+    """Parse provider datetimes across supported Python versions."""
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 def parse_entsoe_xml(payload: str) -> list[PriceEntry]:

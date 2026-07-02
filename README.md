@@ -43,6 +43,11 @@ The config flow defaults to:
 
 The integration uses Home Assistant's shared `aiohttp` websession, modern async config entries, options flow, and a `DataUpdateCoordinator`. API failures do not block startup as long as cached prices are available.
 
+Nord Pool can publish Dutch day-ahead prices in 15-minute market time units.
+This integration aggregates those values into duration-weighted hourly prices
+before exposing the sensors, so `Next Hour Market Price` represents the average
+price for the next full clock hour.
+
 ## Troubleshooting
 
 ### I only see `update.nl_day_ahead_prices_update`
