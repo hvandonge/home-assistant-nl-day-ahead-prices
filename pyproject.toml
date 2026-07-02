@@ -1,0 +1,17 @@
+[project]
+name = "home-assistant-nl-day-ahead-prices"
+version = "0.1.0"
+description = "HACS-compatible Home Assistant integration for Dutch day-ahead electricity prices"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "BLE", "ASYNC", "T20"]
+ignore = ["E501", "UP017"]

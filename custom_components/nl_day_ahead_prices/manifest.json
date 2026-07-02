@@ -1,0 +1,14 @@
+{
+  "domain": "nl_day_ahead_prices",
+  "name": "NL Day Ahead Prices",
+  "after_dependencies": [],
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/lennartkors/home-assistant-nl-day-ahead-prices",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/lennartkors/home-assistant-nl-day-ahead-prices/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
+
