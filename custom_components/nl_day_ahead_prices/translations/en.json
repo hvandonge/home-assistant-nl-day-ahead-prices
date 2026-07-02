@@ -25,11 +25,23 @@
           "primary_provider": "Primary provider",
           "enable_entsoe": "Enable optional ENTSO-E fallback",
           "entsoe_api_token": "ENTSO-E API token",
+          "selected_supplier": "Supplier",
+          "energy_tax": "Energy tax per kWh",
           "energy_tax_incl_vat": "Energy tax including VAT",
           "supplier_markup_excl_vat": "Supplier markup excluding VAT",
-          "vat": "VAT"
+          "vat": "VAT",
+          "custom_supplier_name": "Custom supplier",
+          "custom_monthly_fee_electricity": "Monthly electricity fee",
+          "custom_purchase_fee_electricity": "Electricity purchase fee",
+          "custom_purchase_fee_includes_vat": "Purchase fee includes VAT",
+          "custom_sell_fee_electricity": "Electricity sell fee",
+          "custom_sell_fee_includes_vat": "Sell fee includes VAT"
         }
       }
+    },
+    "error": {
+      "invalid_vat": "VAT must be between 0 and 1",
+      "negative_value": "This value cannot be negative"
     }
   },
   "entity": {
@@ -46,6 +58,12 @@
       "time_of_highest_price_today": { "name": "Time Of Highest Price Today" },
       "current_all_in_price": { "name": "Current All-in Price" },
       "next_hour_all_in_price": { "name": "Next Hour All-in Price" },
+      "average_all_in_price_today": { "name": "Average All-in Price Today" },
+      "lowest_all_in_price_today": { "name": "Lowest All-in Price Today" },
+      "highest_all_in_price_today": { "name": "Highest All-in Price Today" },
+      "supplier_purchase_fee": { "name": "Supplier Purchase Fee" },
+      "supplier_monthly_fee": { "name": "Supplier Monthly Fee" },
+      "selected_supplier": { "name": "Selected Supplier" },
       "current_provider": { "name": "Current Provider" },
       "last_successful_update": { "name": "Last Successful Update" }
     },

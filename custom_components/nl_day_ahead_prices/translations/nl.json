@@ -1,0 +1,74 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "NL Day Ahead Prices",
+        "description": "Stel Nederlandse day-ahead stroomprijzen in.",
+        "data": {
+          "name": "Naam",
+          "country": "Land / biedzone",
+          "currency": "Valuta",
+          "primary_provider": "Primaire provider",
+          "enable_entsoe": "Optionele ENTSO-E fallback inschakelen",
+          "entsoe_api_token": "ENTSO-E API-token"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "NL Day Ahead Prices opties",
+        "data": {
+          "country": "Land / biedzone",
+          "currency": "Valuta",
+          "primary_provider": "Primaire provider",
+          "enable_entsoe": "Optionele ENTSO-E fallback inschakelen",
+          "entsoe_api_token": "ENTSO-E API-token",
+          "selected_supplier": "Leverancier",
+          "energy_tax": "Energiebelasting per kWh",
+          "energy_tax_incl_vat": "Energiebelasting inclusief btw",
+          "supplier_markup_excl_vat": "Leveranciersopslag exclusief btw",
+          "vat": "BTW",
+          "custom_supplier_name": "Eigen leverancier",
+          "custom_monthly_fee_electricity": "Vaste leveringskosten stroom per maand",
+          "custom_purchase_fee_electricity": "Inkoopvergoeding stroom",
+          "custom_purchase_fee_includes_vat": "Inkoopvergoeding is inclusief btw",
+          "custom_sell_fee_electricity": "Verkoopvergoeding stroom",
+          "custom_sell_fee_includes_vat": "Verkoopvergoeding is inclusief btw"
+        }
+      }
+    },
+    "error": {
+      "invalid_vat": "BTW moet tussen 0 en 1 liggen",
+      "negative_value": "Deze waarde mag niet negatief zijn"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_market_price": { "name": "Huidige Marktprijs" },
+      "next_hour_market_price": { "name": "Marktprijs Volgend Uur" },
+      "average_price_today": { "name": "Gemiddelde Prijs Vandaag" },
+      "average_price_tomorrow": { "name": "Gemiddelde Prijs Morgen" },
+      "lowest_price_today": { "name": "Laagste Prijs Vandaag" },
+      "lowest_energy_price": { "name": "Tijd Laagste Energieprijs" },
+      "highest_price_today": { "name": "Hoogste Prijs Vandaag" },
+      "highest_energy_price": { "name": "Tijd Hoogste Energieprijs" },
+      "time_of_lowest_price_today": { "name": "Tijd Van Laagste Prijs Vandaag" },
+      "time_of_highest_price_today": { "name": "Tijd Van Hoogste Prijs Vandaag" },
+      "current_all_in_price": { "name": "Huidige All-in Prijs" },
+      "next_hour_all_in_price": { "name": "All-in Prijs Volgend Uur" },
+      "average_all_in_price_today": { "name": "Gemiddelde All-in Prijs Vandaag" },
+      "lowest_all_in_price_today": { "name": "Laagste All-in Prijs Vandaag" },
+      "highest_all_in_price_today": { "name": "Hoogste All-in Prijs Vandaag" },
+      "supplier_purchase_fee": { "name": "Inkoopvergoeding Leverancier" },
+      "supplier_monthly_fee": { "name": "Maandelijkse Leverancierskosten" },
+      "selected_supplier": { "name": "Gekozen Leverancier" },
+      "current_provider": { "name": "Huidige Provider" },
+      "last_successful_update": { "name": "Laatste Succesvolle Update" }
+    },
+    "binary_sensor": {
+      "tomorrow_prices_available": { "name": "Prijzen Morgen Beschikbaar" }
+    }
+  }
+}

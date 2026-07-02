@@ -1,0 +1,123 @@
+{
+  "zonneplan": {
+    "name": "Zonneplan",
+    "monthly_fee_electricity": 6.25,
+    "purchase_fee_electricity": 0.0200,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0200,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://www.zonneplan.nl/energie/vergelijken/anwb-energie"
+  },
+  "tibber": {
+    "name": "Tibber",
+    "monthly_fee_electricity": 5.99,
+    "purchase_fee_electricity": 0.0248,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0248,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://tibber.com/nl/energiecontract"
+  },
+  "anwb_energie": {
+    "name": "ANWB Energie",
+    "monthly_fee_electricity": 8.50,
+    "purchase_fee_electricity": 0.0180,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0180,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://www.overstappen.nl/energie/leveranciers/anwb-energie/"
+  },
+  "easy_energy": {
+    "name": "EasyEnergy",
+    "monthly_fee_electricity": 7.00,
+    "purchase_fee_electricity": 0.0218,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0218,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+  },
+  "eneco": {
+    "name": "Eneco",
+    "monthly_fee_electricity": 7.00,
+    "purchase_fee_electricity": 0.0241,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0241,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+  },
+  "vandebron": {
+    "name": "Vandebron",
+    "monthly_fee_electricity": 6.25,
+    "purchase_fee_electricity": 0.0219,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0219,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+  },
+  "vattenfall": {
+    "name": "Vattenfall",
+    "monthly_fee_electricity": 7.95,
+    "purchase_fee_electricity": 0.0255,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0255,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+  },
+  "greenchoice": {
+    "name": "Greenchoice",
+    "monthly_fee_electricity": 7.50,
+    "purchase_fee_electricity": 0.0224,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0224,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+  },
+  "energyzero": {
+    "name": "EnergyZero",
+    "monthly_fee_electricity": 7.50,
+    "purchase_fee_electricity": 0.0224,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0224,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+  },
+  "samsam": {
+    "name": "SamSam",
+    "monthly_fee_electricity": 7.99,
+    "purchase_fee_electricity": 0.0339,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0339,
+    "sell_fee_includes_vat": true,
+    "last_verified": "2026-07-02",
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+  },
+  "custom": {
+    "name": "Eigen leverancier",
+    "monthly_fee_electricity": 0.00,
+    "purchase_fee_electricity": 0.0000,
+    "purchase_fee_unit": "EUR_PER_KWH",
+    "purchase_fee_includes_vat": true,
+    "sell_fee_electricity": 0.0000,
+    "sell_fee_includes_vat": true,
+    "last_verified": null,
+    "source_url": null
+  }
+}

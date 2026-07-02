@@ -12,23 +12,37 @@ from homeassistant.data_entry_flow import FlowResult
 from .const import (
     CONF_COUNTRY,
     CONF_CURRENCY,
+    CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY,
+    CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY,
+    CONF_CUSTOM_PURCHASE_FEE_INCLUDES_VAT,
+    CONF_CUSTOM_SELL_FEE_ELECTRICITY,
+    CONF_CUSTOM_SELL_FEE_INCLUDES_VAT,
+    CONF_CUSTOM_SUPPLIER_NAME,
     CONF_ENABLE_ENTSOE,
+    CONF_ENERGY_TAX,
     CONF_ENERGY_TAX_INCL_VAT,
     CONF_ENTSOE_API_TOKEN,
     CONF_PRIMARY_PROVIDER,
-    CONF_SUPPLIER_MARKUP_EXCL_VAT,
+    CONF_SELECTED_SUPPLIER,
     CONF_VAT,
     DEFAULT_COUNTRY,
     DEFAULT_CURRENCY,
-    DEFAULT_ENERGY_TAX_INCL_VAT,
+    DEFAULT_CUSTOM_MONTHLY_FEE_ELECTRICITY,
+    DEFAULT_CUSTOM_PURCHASE_FEE_ELECTRICITY,
+    DEFAULT_CUSTOM_PURCHASE_FEE_INCLUDES_VAT,
+    DEFAULT_CUSTOM_SELL_FEE_ELECTRICITY,
+    DEFAULT_CUSTOM_SELL_FEE_INCLUDES_VAT,
+    DEFAULT_CUSTOM_SUPPLIER_NAME,
+    DEFAULT_ENERGY_TAX,
     DEFAULT_PRIMARY_PROVIDER,
-    DEFAULT_SUPPLIER_MARKUP_EXCL_VAT,
+    DEFAULT_SELECTED_SUPPLIER,
     DEFAULT_VAT,
     DOMAIN,
     NAME,
     PROVIDER_ENERGY_CHARTS,
     PROVIDER_NORD_POOL,
 )
+from .supplier_profiles import load_supplier_profiles
 
 
 class NLDayAheadPricesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -69,9 +83,21 @@ class NLDayAheadPricesOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage options."""
         if user_input is not None:
+            errors = _validate_options(user_input)
+            if errors:
+                return self.async_show_form(
+                    step_id="init",
+                    data_schema=await self._async_options_schema(user_input),
+                    errors=errors,
+                )
             return self.async_create_entry(title="", data=user_input)
 
         data = {**self.config_entry.data, **self.config_entry.options}
+        return self.async_show_form(step_id="init", data_schema=await self._async_options_schema(data))
+
+    async def _async_options_schema(self, data: dict[str, Any]) -> vol.Schema:
+        profiles = await self.hass.async_add_executor_job(load_supplier_profiles)
+        supplier_choices = {key: profile.name for key, profile in profiles.items()}
         schema = vol.Schema(
             {
                 vol.Optional(CONF_COUNTRY, default=data.get(CONF_COUNTRY, DEFAULT_COUNTRY)): str,
@@ -82,14 +108,68 @@ class NLDayAheadPricesOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(CONF_ENABLE_ENTSOE, default=data.get(CONF_ENABLE_ENTSOE, False)): bool,
                 vol.Optional(CONF_ENTSOE_API_TOKEN, default=data.get(CONF_ENTSOE_API_TOKEN, "")): str,
                 vol.Optional(
-                    CONF_ENERGY_TAX_INCL_VAT,
-                    default=data.get(CONF_ENERGY_TAX_INCL_VAT, DEFAULT_ENERGY_TAX_INCL_VAT),
+                    CONF_SELECTED_SUPPLIER,
+                    default=data.get(CONF_SELECTED_SUPPLIER, DEFAULT_SELECTED_SUPPLIER),
+                ): vol.In(supplier_choices),
+                vol.Optional(
+                    CONF_ENERGY_TAX,
+                    default=data.get(CONF_ENERGY_TAX, data.get(CONF_ENERGY_TAX_INCL_VAT, DEFAULT_ENERGY_TAX)),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                vol.Optional(CONF_VAT, default=data.get(CONF_VAT, DEFAULT_VAT)): vol.All(
+                    vol.Coerce(float), vol.Range(min=0, max=1)
+                ),
+                vol.Optional(
+                    CONF_CUSTOM_SUPPLIER_NAME,
+                    default=data.get(CONF_CUSTOM_SUPPLIER_NAME, DEFAULT_CUSTOM_SUPPLIER_NAME),
+                ): str,
+                vol.Optional(
+                    CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY,
+                    default=data.get(CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY, DEFAULT_CUSTOM_MONTHLY_FEE_ELECTRICITY),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                vol.Optional(
+                    CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY,
+                    default=data.get(CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY, DEFAULT_CUSTOM_PURCHASE_FEE_ELECTRICITY),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+                vol.Optional(
+                    CONF_CUSTOM_PURCHASE_FEE_INCLUDES_VAT,
+                    default=data.get(
+                        CONF_CUSTOM_PURCHASE_FEE_INCLUDES_VAT, DEFAULT_CUSTOM_PURCHASE_FEE_INCLUDES_VAT
+                    ),
+                ): bool,
+                vol.Optional(
+                    CONF_CUSTOM_SELL_FEE_ELECTRICITY,
+                    default=data.get(CONF_CUSTOM_SELL_FEE_ELECTRICITY, DEFAULT_CUSTOM_SELL_FEE_ELECTRICITY),
                 ): vol.Coerce(float),
                 vol.Optional(
-                    CONF_SUPPLIER_MARKUP_EXCL_VAT,
-                    default=data.get(CONF_SUPPLIER_MARKUP_EXCL_VAT, DEFAULT_SUPPLIER_MARKUP_EXCL_VAT),
-                ): vol.Coerce(float),
-                vol.Optional(CONF_VAT, default=data.get(CONF_VAT, DEFAULT_VAT)): vol.Coerce(float),
+                    CONF_CUSTOM_SELL_FEE_INCLUDES_VAT,
+                    default=data.get(CONF_CUSTOM_SELL_FEE_INCLUDES_VAT, DEFAULT_CUSTOM_SELL_FEE_INCLUDES_VAT),
+                ): bool,
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return schema
+
+
+def _validate_options(user_input: dict[str, Any]) -> dict[str, str]:
+    """Validate numeric option ranges."""
+    errors: dict[str, str] = {}
+    vat = _float_option(user_input, CONF_VAT, DEFAULT_VAT)
+    energy_tax = _float_option(user_input, CONF_ENERGY_TAX, DEFAULT_ENERGY_TAX)
+    monthly_fee = _float_option(user_input, CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY, 0)
+    purchase_fee = _float_option(user_input, CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY, 0)
+    if vat is None or vat < 0 or vat > 1:
+        errors[CONF_VAT] = "invalid_vat"
+    if energy_tax is None or energy_tax < 0:
+        errors[CONF_ENERGY_TAX] = "negative_value"
+    if monthly_fee is None or monthly_fee < 0:
+        errors[CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY] = "negative_value"
+    if purchase_fee is None or purchase_fee < 0:
+        errors[CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY] = "negative_value"
+    return errors
+
+
+def _float_option(user_input: dict[str, Any], key: str, default: float) -> float | None:
+    """Read an option as float without raising from the options flow."""
+    try:
+        return float(user_input.get(key, default))
+    except (TypeError, ValueError):
+        return None

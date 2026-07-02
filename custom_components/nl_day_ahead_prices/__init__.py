@@ -17,8 +17,10 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up NL Day Ahead Prices from a config entry."""
     from .coordinator import NLDayAheadPricesCoordinator
+    from .supplier_profiles import load_supplier_profiles
 
     _LOGGER.info("Setting up NL Day Ahead Prices config entry %s", entry.entry_id)
+    await hass.async_add_executor_job(load_supplier_profiles)
     coordinator = NLDayAheadPricesCoordinator(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, _platforms())

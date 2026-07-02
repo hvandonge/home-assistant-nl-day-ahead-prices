@@ -16,11 +16,31 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .calculations import (
+    build_all_in_price_attributes,
+    calculate_all_in_price,
+    calculate_monthly_fee,
+    calculate_supplier_fee,
+)
 from .const import (
+    CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY,
+    CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY,
+    CONF_CUSTOM_PURCHASE_FEE_INCLUDES_VAT,
+    CONF_CUSTOM_SELL_FEE_ELECTRICITY,
+    CONF_CUSTOM_SELL_FEE_INCLUDES_VAT,
+    CONF_CUSTOM_SUPPLIER_NAME,
+    CONF_ENERGY_TAX,
     CONF_ENERGY_TAX_INCL_VAT,
+    CONF_SELECTED_SUPPLIER,
     CONF_SUPPLIER_MARKUP_EXCL_VAT,
     CONF_VAT,
-    DEFAULT_ENERGY_TAX_INCL_VAT,
+    DEFAULT_CUSTOM_MONTHLY_FEE_ELECTRICITY,
+    DEFAULT_CUSTOM_PURCHASE_FEE_INCLUDES_VAT,
+    DEFAULT_CUSTOM_SELL_FEE_ELECTRICITY,
+    DEFAULT_CUSTOM_SELL_FEE_INCLUDES_VAT,
+    DEFAULT_CUSTOM_SUPPLIER_NAME,
+    DEFAULT_ENERGY_TAX,
+    DEFAULT_SELECTED_SUPPLIER,
     DEFAULT_SUPPLIER_MARKUP_EXCL_VAT,
     DEFAULT_VAT,
     DOMAIN,
@@ -30,12 +50,12 @@ from .coordinator import NLDayAheadPricesCoordinator
 from .models import (
     PriceData,
     average_price,
-    calculate_all_in_price,
     current_price,
     highest_price,
     lowest_price,
     next_hour_price,
 )
+from .supplier_profiles import SupplierProfile, load_supplier_profiles, supplier_profile_to_dict
 
 EUR_PER_KWH = f"EUR/{UnitOfEnergy.KILO_WATT_HOUR}"
 _LOGGER = logging.getLogger(__name__)
@@ -100,13 +120,93 @@ def _next_hour_all_in(data: PriceData, now: datetime, entry: ConfigEntry) -> flo
     return _calculate_all_in(market, entry)
 
 
+def _average_all_in_today(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
+    return _average_today(data, now, entry)
+
+
+def _lowest_all_in_today(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
+    return _lowest_today(data, now, entry)
+
+
+def _highest_all_in_today(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
+    return _highest_today(data, now, entry)
+
+
+def _supplier_purchase_fee(data: PriceData, now: datetime, entry: ConfigEntry) -> float:
+    return calculate_supplier_fee(_selected_supplier_profile(entry), _vat(entry))
+
+
+def _supplier_monthly_fee(data: PriceData, now: datetime, entry: ConfigEntry) -> float:
+    return calculate_monthly_fee(_selected_supplier_profile(entry))
+
+
+def _selected_supplier(data: PriceData, now: datetime, entry: ConfigEntry) -> str:
+    return _selected_supplier_profile(entry).name
+
+
 def _calculate_all_in(market: float, entry: ConfigEntry) -> float:
-    options = entry.options
     return calculate_all_in_price(
         market,
-        float(options.get(CONF_ENERGY_TAX_INCL_VAT, DEFAULT_ENERGY_TAX_INCL_VAT)),
-        float(options.get(CONF_SUPPLIER_MARKUP_EXCL_VAT, DEFAULT_SUPPLIER_MARKUP_EXCL_VAT)),
-        float(options.get(CONF_VAT, DEFAULT_VAT)),
+        _energy_tax(entry),
+        _selected_supplier_profile(entry),
+        _vat(entry),
+    )
+
+
+def _entry_options(entry: ConfigEntry) -> dict[str, Any]:
+    return {**entry.data, **entry.options}
+
+
+def _energy_tax(entry: ConfigEntry) -> float:
+    options = _entry_options(entry)
+    return float(options.get(CONF_ENERGY_TAX, options.get(CONF_ENERGY_TAX_INCL_VAT, DEFAULT_ENERGY_TAX)))
+
+
+def _vat(entry: ConfigEntry) -> float:
+    return float(_entry_options(entry).get(CONF_VAT, DEFAULT_VAT))
+
+
+def _selected_supplier_key(entry: ConfigEntry) -> str:
+    return str(_entry_options(entry).get(CONF_SELECTED_SUPPLIER, DEFAULT_SELECTED_SUPPLIER))
+
+
+def _selected_supplier_profile(entry: ConfigEntry) -> SupplierProfile:
+    key = _selected_supplier_key(entry)
+    if key == "custom":
+        return _custom_supplier_profile(entry)
+
+    profiles = load_supplier_profiles()
+    if key in profiles:
+        return profiles[key]
+
+    _LOGGER.warning("Configured supplier profile %s is unavailable; falling back to custom supplier", key)
+    return _custom_supplier_profile(entry)
+
+
+def _custom_supplier_profile(entry: ConfigEntry) -> SupplierProfile:
+    options = _entry_options(entry)
+    vat = _vat(entry)
+    legacy_markup_incl_vat = float(
+        options.get(CONF_SUPPLIER_MARKUP_EXCL_VAT, DEFAULT_SUPPLIER_MARKUP_EXCL_VAT)
+    ) * (1 + vat)
+    purchase_fee = float(options.get(CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY, legacy_markup_incl_vat))
+    return SupplierProfile(
+        key="custom",
+        name=str(options.get(CONF_CUSTOM_SUPPLIER_NAME, DEFAULT_CUSTOM_SUPPLIER_NAME)),
+        monthly_fee_electricity=float(
+            options.get(CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY, DEFAULT_CUSTOM_MONTHLY_FEE_ELECTRICITY)
+        ),
+        purchase_fee_electricity=purchase_fee,
+        purchase_fee_unit="EUR_PER_KWH",
+        purchase_fee_includes_vat=bool(
+            options.get(CONF_CUSTOM_PURCHASE_FEE_INCLUDES_VAT, DEFAULT_CUSTOM_PURCHASE_FEE_INCLUDES_VAT)
+        ),
+        sell_fee_electricity=float(
+            options.get(CONF_CUSTOM_SELL_FEE_ELECTRICITY, DEFAULT_CUSTOM_SELL_FEE_ELECTRICITY)
+        ),
+        sell_fee_includes_vat=bool(options.get(CONF_CUSTOM_SELL_FEE_INCLUDES_VAT, DEFAULT_CUSTOM_SELL_FEE_INCLUDES_VAT)),
+        last_verified=None,
+        source_url=None,
     )
 
 
@@ -207,6 +307,51 @@ SENSORS: tuple[NLPriceSensorDescription, ...] = (
         suggested_display_precision=4,
         value_fn=_next_hour_all_in,
     ),
+    NLPriceSensorDescription(
+        key="average_all_in_price_today",
+        translation_key="average_all_in_price_today",
+        native_unit_of_measurement=EUR_PER_KWH,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=4,
+        value_fn=_average_all_in_today,
+    ),
+    NLPriceSensorDescription(
+        key="lowest_all_in_price_today",
+        translation_key="lowest_all_in_price_today",
+        native_unit_of_measurement=EUR_PER_KWH,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=4,
+        value_fn=_lowest_all_in_today,
+    ),
+    NLPriceSensorDescription(
+        key="highest_all_in_price_today",
+        translation_key="highest_all_in_price_today",
+        native_unit_of_measurement=EUR_PER_KWH,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=4,
+        value_fn=_highest_all_in_today,
+    ),
+    NLPriceSensorDescription(
+        key="supplier_purchase_fee",
+        translation_key="supplier_purchase_fee",
+        native_unit_of_measurement=EUR_PER_KWH,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=4,
+        value_fn=_supplier_purchase_fee,
+    ),
+    NLPriceSensorDescription(
+        key="supplier_monthly_fee",
+        translation_key="supplier_monthly_fee",
+        native_unit_of_measurement="EUR",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_supplier_monthly_fee,
+    ),
+    NLPriceSensorDescription(
+        key="selected_supplier",
+        translation_key="selected_supplier",
+        value_fn=_selected_supplier,
+    ),
     NLPriceSensorDescription(key="current_provider", translation_key="current_provider", value_fn=_provider),
     NLPriceSensorDescription(
         key="last_successful_update",
@@ -265,10 +410,17 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
         data = self.coordinator.data
         if data is None:
             return {}
+        supplier_profile = _selected_supplier_profile(self.entry)
         return {
             "prices": [entry.as_attribute() for entry in data.result.prices],
             "prices_today": [entry.as_attribute() for entry in data.result.prices_today],
             "prices_tomorrow": [entry.as_attribute() for entry in data.result.prices_tomorrow],
+            "all_in_prices_today": build_all_in_price_attributes(
+                data.result.prices_today, _energy_tax(self.entry), supplier_profile, _vat(self.entry)
+            ),
+            "all_in_prices_tomorrow": build_all_in_price_attributes(
+                data.result.prices_tomorrow, _energy_tax(self.entry), supplier_profile, _vat(self.entry)
+            ),
             "raw_today": data.result.raw_today,
             "raw_tomorrow": data.result.raw_tomorrow,
             "provider": data.result.provider,
@@ -277,4 +429,13 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
             "last_successful_update": data.last_successful_update.isoformat()
             if data.last_successful_update
             else None,
+            "selected_supplier": supplier_profile.key,
+            "selected_supplier_name": supplier_profile.name,
+            "supplier_purchase_fee": round(calculate_supplier_fee(supplier_profile, _vat(self.entry)), 6),
+            "supplier_monthly_fee": round(calculate_monthly_fee(supplier_profile), 2),
+            "energy_tax": _energy_tax(self.entry),
+            "vat": _vat(self.entry),
+            "supplier_profile_last_verified": supplier_profile.last_verified,
+            "supplier_profile_source_url": supplier_profile.source_url,
+            "supplier_profile": supplier_profile_to_dict(supplier_profile),
         }
