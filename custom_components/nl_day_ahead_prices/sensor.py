@@ -162,10 +162,8 @@ SENSORS: tuple[NLPriceSensorDescription, ...] = (
     NLPriceSensorDescription(
         key="lowest_energy_price",
         translation_key="lowest_energy_price",
-        native_unit_of_measurement=EUR_PER_KWH,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=4,
-        value_fn=_lowest_today,
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_lowest_time_today,
     ),
     NLPriceSensorDescription(
         key="highest_price_today",

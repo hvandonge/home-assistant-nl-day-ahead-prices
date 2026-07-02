@@ -147,7 +147,7 @@ Sensors:
 - Average Price Today
 - Average Price Tomorrow
 - Lowest Price Today
-- Lowest Energy Price
+- Lowest Energy Price Time
 - Highest Price Today
 - Time Of Lowest Price Today
 - Time Of Highest Price Today
