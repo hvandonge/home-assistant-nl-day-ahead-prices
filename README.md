@@ -84,9 +84,18 @@ all_in = market_price + energy_tax_incl_vat + supplier_markup_excl_vat * (1 + va
 ```
 
 `Current Market Price` and `Next Hour Market Price` are bare market prices.
-They do not include taxes, VAT, or supplier markup. Use `Current All-in Price`
-and `Next Hour All-in Price` when you want the price including your configured
-tax and supplier settings.
+They do not include taxes, VAT, or supplier markup.
+
+The day summary sensors are all-in prices using your configured tax and
+supplier settings:
+
+- `Average Price Today`
+- `Average Price Tomorrow`
+- `Lowest Price Today`
+- `Highest Price Today`
+
+Use `Current All-in Price` and `Next Hour All-in Price` for all-in prices for
+the current and next hour.
 
 ### Supplier Tariffs
 

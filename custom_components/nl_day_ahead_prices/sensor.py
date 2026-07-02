@@ -57,21 +57,23 @@ def _next_hour(data: PriceData, now: datetime, entry: ConfigEntry) -> float | No
 
 
 def _average_today(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
-    return average_price(data.result.prices_today)
+    market = average_price(data.result.prices_today)
+    return _calculate_all_in(market, entry) if market is not None else None
 
 
 def _average_tomorrow(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
-    return average_price(data.result.prices_tomorrow)
+    market = average_price(data.result.prices_tomorrow)
+    return _calculate_all_in(market, entry) if market is not None else None
 
 
 def _lowest_today(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
     entry_data = lowest_price(data.result.prices_today)
-    return entry_data.price if entry_data else None
+    return _calculate_all_in(entry_data.price, entry) if entry_data else None
 
 
 def _highest_today(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
     entry_data = highest_price(data.result.prices_today)
-    return entry_data.price if entry_data else None
+    return _calculate_all_in(entry_data.price, entry) if entry_data else None
 
 
 def _lowest_time_today(data: PriceData, now: datetime, entry: ConfigEntry) -> datetime | None:
