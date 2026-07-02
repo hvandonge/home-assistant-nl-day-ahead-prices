@@ -33,9 +33,7 @@ PROVIDER_NAMES = {
     PROVIDER_CACHE: "Last known valid prices cache",
 }
 
-PLATFORMS = ["sensor", "binary_sensor"]
 UPDATE_INTERVAL = timedelta(hours=1)
 REQUEST_TIMEOUT = 20
 REQUEST_RETRIES = 2
 CACHE_VERSION = 1
-

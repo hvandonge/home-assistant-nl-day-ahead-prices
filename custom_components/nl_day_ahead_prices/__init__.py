@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -18,14 +18,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = NLDayAheadPricesCoordinator(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await coordinator.async_refresh()
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, _platforms())
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, _platforms())
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
@@ -34,3 +34,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload after options changes."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+def _platforms() -> list:
+    """Return Home Assistant platforms without importing HA during pure module tests."""
+    from homeassistant.const import Platform
+
+    return [Platform.SENSOR, Platform.BINARY_SENSOR]

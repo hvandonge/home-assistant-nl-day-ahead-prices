@@ -72,14 +72,14 @@ def _highest_today(data: PriceData, now: datetime, entry: ConfigEntry) -> float 
     return entry_data.price if entry_data else None
 
 
-def _lowest_time_today(data: PriceData, now: datetime, entry: ConfigEntry) -> str | None:
+def _lowest_time_today(data: PriceData, now: datetime, entry: ConfigEntry) -> datetime | None:
     entry_data = lowest_price(data.result.prices_today)
-    return entry_data.time.isoformat() if entry_data else None
+    return entry_data.time if entry_data else None
 
 
-def _highest_time_today(data: PriceData, now: datetime, entry: ConfigEntry) -> str | None:
+def _highest_time_today(data: PriceData, now: datetime, entry: ConfigEntry) -> datetime | None:
     entry_data = highest_price(data.result.prices_today)
-    return entry_data.time.isoformat() if entry_data else None
+    return entry_data.time if entry_data else None
 
 
 def _current_all_in(data: PriceData, now: datetime, entry: ConfigEntry) -> float | None:
@@ -99,8 +99,8 @@ def _provider(data: PriceData, now: datetime, entry: ConfigEntry) -> str:
     return PROVIDER_NAMES.get(data.result.provider, data.result.provider)
 
 
-def _last_successful(data: PriceData, now: datetime, entry: ConfigEntry) -> str | None:
-    return data.last_successful_update.isoformat() if data.last_successful_update else None
+def _last_successful(data: PriceData, now: datetime, entry: ConfigEntry) -> datetime | None:
+    return data.last_successful_update
 
 
 SENSORS: tuple[NLPriceSensorDescription, ...] = (
