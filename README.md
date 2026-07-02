@@ -149,6 +149,7 @@ Sensors:
 - Lowest Price Today
 - Lowest Energy Price Time
 - Highest Price Today
+- Highest Energy Price Time
 - Time Of Lowest Price Today
 - Time Of Highest Price Today
 - Current All-in Price

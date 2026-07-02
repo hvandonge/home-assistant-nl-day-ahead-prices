@@ -174,6 +174,12 @@ SENSORS: tuple[NLPriceSensorDescription, ...] = (
         value_fn=_highest_today,
     ),
     NLPriceSensorDescription(
+        key="highest_energy_price",
+        translation_key="highest_energy_price",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_highest_time_today,
+    ),
+    NLPriceSensorDescription(
         key="time_of_lowest_price_today",
         translation_key="time_of_lowest_price_today",
         device_class=SensorDeviceClass.TIMESTAMP,

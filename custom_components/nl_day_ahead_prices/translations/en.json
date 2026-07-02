@@ -41,6 +41,7 @@
       "lowest_price_today": { "name": "Lowest Price Today" },
       "lowest_energy_price": { "name": "Lowest Energy Price Time" },
       "highest_price_today": { "name": "Highest Price Today" },
+      "highest_energy_price": { "name": "Highest Energy Price Time" },
       "time_of_lowest_price_today": { "name": "Time Of Lowest Price Today" },
       "time_of_highest_price_today": { "name": "Time Of Highest Price Today" },
       "current_all_in_price": { "name": "Current All-in Price" },
