@@ -83,6 +83,47 @@ Formula:
 all_in = market_price + energy_tax_incl_vat + supplier_markup_excl_vat * (1 + vat)
 ```
 
+### Supplier Tariffs
+
+Supplier-specific prices from providers such as Zonneplan, Tibber, ANWB, or
+other dynamic contracts should be entered through the integration options. The
+integration intentionally does not hard-code supplier tariffs, because those
+values can change and may differ per contract.
+
+Use the settings like this:
+
+- `energy_tax_incl_vat`: Dutch energy tax in `EUR/kWh`, including VAT.
+- `supplier_markup_excl_vat`: supplier purchasing fee or markup in `EUR/kWh`,
+  excluding VAT.
+- `vat`: VAT fraction, for example `0.21`.
+
+If your supplier publishes a markup including VAT, convert it first:
+
+```text
+supplier_markup_excl_vat = supplier_markup_incl_vat / (1 + vat)
+```
+
+Example with a supplier markup of `0.0200 EUR/kWh` including VAT:
+
+```text
+0.0200 / 1.21 = 0.01653
+```
+
+If your supplier publishes a markup in `EUR/MWh`, convert it to `EUR/kWh`:
+
+```text
+EUR/kWh = EUR/MWh / 1000
+```
+
+Fixed monthly subscription fees are not included automatically in
+`Current All-in Price`, because they are not a per-kWh market price component.
+If you want to include them anyway, convert them manually to an estimated
+`EUR/kWh` value based on your expected monthly consumption and add that to the
+supplier markup.
+
+For Zonneplan, Tibber, ANWB, or another supplier, check your current contract or
+tariff sheet and enter the supplier's per-kWh markup using the rules above.
+
 ## Entities
 
 Sensors:
