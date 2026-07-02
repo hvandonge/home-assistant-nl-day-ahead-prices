@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -37,6 +38,7 @@ from .models import (
 )
 
 EUR_PER_KWH = f"EUR/{UnitOfEnergy.KILO_WATT_HOUR}"
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -189,7 +191,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensors."""
     coordinator: NLDayAheadPricesCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(NLDayAheadPriceSensor(coordinator, entry, description) for description in SENSORS)
+    entities = [NLDayAheadPriceSensor(coordinator, entry, description) for description in SENSORS]
+    _LOGGER.info("Adding %s NL Day Ahead Prices sensor entities", len(entities))
+    async_add_entities(entities)
 
 
 class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], SensorEntity):

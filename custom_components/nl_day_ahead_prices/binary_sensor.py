@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -11,6 +13,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .coordinator import NLDayAheadPricesCoordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -19,6 +23,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up binary sensors."""
     coordinator: NLDayAheadPricesCoordinator = hass.data[DOMAIN][entry.entry_id]
+    _LOGGER.info("Adding NL Day Ahead Prices tomorrow prices binary sensor")
     async_add_entities([TomorrowPricesAvailableBinarySensor(coordinator, entry)])
 
 
@@ -43,4 +48,3 @@ class TomorrowPricesAvailableBinarySensor(CoordinatorEntity[NLDayAheadPricesCoor
         if self.coordinator.data is None:
             return None
         return bool(self.coordinator.data.result.prices_tomorrow)
-
