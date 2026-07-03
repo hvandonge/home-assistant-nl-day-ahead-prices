@@ -7,8 +7,16 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0200,
     "sell_fee_includes_vat": true,
-    "last_verified": "2026-07-02",
-    "source_url": "https://www.zonneplan.nl/energie/vergelijken/anwb-energie"
+    "price_resolution": "date_based",
+    "price_resolution_changes": [
+      {
+        "from": "2026-08-01",
+        "resolution": "quarter_hour"
+      }
+    ],
+    "default_price_resolution_before_change": "hourly",
+    "last_verified": "2026-07-03",
+    "source_url": "https://www.zonneplan.nl/blog/kwartierprijzen-bij-zonneplan"
   },
   "tibber": {
     "name": "Tibber",
@@ -18,7 +26,10 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0248,
     "sell_fee_includes_vat": true,
-    "last_verified": "2026-07-02",
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
+    "last_verified": "2026-07-03",
     "source_url": "https://tibber.com/nl/energiecontract"
   },
   "anwb_energie": {
@@ -29,8 +40,11 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0180,
     "sell_fee_includes_vat": true,
-    "last_verified": "2026-07-02",
-    "source_url": "https://www.overstappen.nl/energie/leveranciers/anwb-energie/"
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
+    "last_verified": "2026-07-03",
+    "source_url": "https://www.anwb.nl/energie/actuele-tarieven"
   },
   "easy_energy": {
     "name": "EasyEnergy",
@@ -40,6 +54,9 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0218,
     "sell_fee_includes_vat": true,
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
     "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
   },
@@ -51,19 +68,25 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0241,
     "sell_fee_includes_vat": true,
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
     "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
   },
   "vandebron": {
     "name": "Vandebron",
     "monthly_fee_electricity": 6.25,
-    "purchase_fee_electricity": 0.0219,
+    "purchase_fee_electricity": 0.0257,
     "purchase_fee_unit": "EUR_PER_KWH",
     "purchase_fee_includes_vat": true,
-    "sell_fee_electricity": 0.0219,
+    "sell_fee_electricity": 0.0257,
     "sell_fee_includes_vat": true,
-    "last_verified": "2026-07-02",
-    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
+    "last_verified": "2026-07-03",
+    "source_url": "https://vandebron.nl/energie/energiecontract/dynamisch"
   },
   "vattenfall": {
     "name": "Vattenfall",
@@ -73,6 +96,9 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0255,
     "sell_fee_includes_vat": true,
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
     "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
   },
@@ -84,6 +110,9 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0224,
     "sell_fee_includes_vat": true,
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
     "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
   },
@@ -95,6 +124,9 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0224,
     "sell_fee_includes_vat": true,
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
     "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
   },
@@ -106,6 +138,9 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0339,
     "sell_fee_includes_vat": true,
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
     "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
   },
@@ -117,6 +152,9 @@
     "purchase_fee_includes_vat": true,
     "sell_fee_electricity": 0.0000,
     "sell_fee_includes_vat": true,
+    "price_resolution": "hourly",
+    "price_resolution_changes": [],
+    "default_price_resolution_before_change": null,
     "last_verified": null,
     "source_url": null
   }

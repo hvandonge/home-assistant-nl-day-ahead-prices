@@ -2,6 +2,35 @@
 
 All notable changes to **NL Day Ahead Prices** are documented here.
 
+## v1.3.0 - 2026-07-03
+
+### Added
+
+- Added `price_resolution` option: `auto`, `hourly`, or `quarter_hour`.
+- Added automatic supplier-based price resolution.
+- Added date-based Zonneplan support: hourly before 2026-08-01 and
+  quarter-hour from 2026-08-01.
+- Added raw source price attributes: `raw_prices`, `raw_prices_today`,
+  `raw_prices_tomorrow`, and `raw_price_resolution`.
+- Added converted price metadata attributes: `price_resolution`,
+  `requested_price_resolution`, `effective_price_resolution`, and
+  `resolution_converted`.
+- Added `Effective Price Resolution` sensor.
+- Added resolution-aware cheapest consecutive block attributes.
+
+### Changed
+
+- Nord Pool quarter-hour source prices are preserved and converted later based
+  on the selected resolution.
+- `Next Hour` price logic is now interval-aware and returns the next hour or
+  next quarter-hour depending on the effective resolution.
+- Updated Vandebron purchase and sell fee to `0.0257 EUR/kWh` including VAT.
+
+### Fixed
+
+- Fixed all-in price calculation by applying VAT to the bare market price.
+  This addresses reported 1-3 ct/kWh differences compared to supplier apps.
+
 ## v1.2.2 - 2026-07-02
 
 ### Changed

@@ -8,6 +8,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .price_resolution import (
+    PRICE_RESOLUTION_HOURLY,
+    normalize_profile_price_resolution,
+)
+
 _LOGGER = logging.getLogger(__name__)
 
 PROFILE_FILE = Path(__file__).with_name("supplier_profiles.json")
@@ -28,6 +33,9 @@ class SupplierProfile:
     sell_fee_includes_vat: bool
     last_verified: str | None
     source_url: str | None
+    price_resolution: str = PRICE_RESOLUTION_HOURLY
+    price_resolution_changes: list[dict[str, str]] | None = None
+    default_price_resolution_before_change: str | None = None
 
 
 _PROFILE_CACHE: dict[str, SupplierProfile] | None = None
@@ -74,6 +82,11 @@ def normalize_supplier_profile(profile: dict[str, Any], key: str = "custom") -> 
     purchase_fee_includes_vat = bool(profile.get("purchase_fee_includes_vat", True))
     sell_fee = float(profile.get("sell_fee_electricity", 0.0))
     sell_fee_includes_vat = bool(profile.get("sell_fee_includes_vat", True))
+    price_resolution = normalize_profile_price_resolution(profile.get("price_resolution", PRICE_RESOLUTION_HOURLY))
+    price_resolution_changes = _normalize_price_resolution_changes(profile.get("price_resolution_changes", []))
+    default_before_change = profile.get("default_price_resolution_before_change")
+    if default_before_change is not None:
+        default_before_change = normalize_profile_price_resolution(default_before_change)
     last_verified = profile.get("last_verified")
     source_url = profile.get("source_url")
 
@@ -97,6 +110,9 @@ def normalize_supplier_profile(profile: dict[str, Any], key: str = "custom") -> 
         purchase_fee_includes_vat=purchase_fee_includes_vat,
         sell_fee_electricity=sell_fee,
         sell_fee_includes_vat=sell_fee_includes_vat,
+        price_resolution=price_resolution,
+        price_resolution_changes=price_resolution_changes,
+        default_price_resolution_before_change=default_before_change,
         last_verified=last_verified,
         source_url=source_url,
     )
@@ -113,6 +129,24 @@ def supplier_profile_to_dict(profile: SupplierProfile) -> dict[str, Any]:
         "purchase_fee_includes_vat": profile.purchase_fee_includes_vat,
         "sell_fee_electricity": profile.sell_fee_electricity,
         "sell_fee_includes_vat": profile.sell_fee_includes_vat,
+        "price_resolution": profile.price_resolution,
+        "price_resolution_changes": profile.price_resolution_changes or [],
+        "default_price_resolution_before_change": profile.default_price_resolution_before_change,
         "last_verified": profile.last_verified,
         "source_url": profile.source_url,
     }
+
+
+def _normalize_price_resolution_changes(value: Any) -> list[dict[str, str]]:
+    if value in (None, ""):
+        return []
+    if not isinstance(value, list):
+        raise ValueError("price_resolution_changes must be a list")
+    changes: list[dict[str, str]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("price_resolution_changes entries must be objects")
+        from_date = str(item["from"])
+        resolution = normalize_profile_price_resolution(item["resolution"])
+        changes.append({"from": from_date, "resolution": resolution})
+    return changes

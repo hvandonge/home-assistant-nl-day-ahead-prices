@@ -55,6 +55,11 @@ from .models import (
     lowest_price,
     next_hour_price,
 )
+from .price_resolution import (
+    PRICE_RESOLUTION_HOURLY,
+    PRICE_RESOLUTION_QUARTER_HOUR,
+    find_cheapest_consecutive_block,
+)
 from .supplier_profiles import SupplierProfile, load_supplier_profiles, supplier_profile_to_dict
 
 EUR_PER_KWH = f"EUR/{UnitOfEnergy.KILO_WATT_HOUR}"
@@ -144,6 +149,10 @@ def _selected_supplier(data: PriceData, now: datetime, entry: ConfigEntry) -> st
     return _selected_supplier_profile(entry).name
 
 
+def _effective_price_resolution(data: PriceData, now: datetime, entry: ConfigEntry) -> str:
+    return data.result.effective_price_resolution
+
+
 def _calculate_all_in(market: float, entry: ConfigEntry) -> float:
     return calculate_all_in_price(
         market,
@@ -207,6 +216,9 @@ def _custom_supplier_profile(entry: ConfigEntry) -> SupplierProfile:
         sell_fee_includes_vat=bool(options.get(CONF_CUSTOM_SELL_FEE_INCLUDES_VAT, DEFAULT_CUSTOM_SELL_FEE_INCLUDES_VAT)),
         last_verified=None,
         source_url=None,
+        price_resolution=PRICE_RESOLUTION_HOURLY,
+        price_resolution_changes=[],
+        default_price_resolution_before_change=None,
     )
 
 
@@ -352,6 +364,11 @@ SENSORS: tuple[NLPriceSensorDescription, ...] = (
         translation_key="selected_supplier",
         value_fn=_selected_supplier,
     ),
+    NLPriceSensorDescription(
+        key="effective_price_resolution",
+        translation_key="effective_price_resolution",
+        value_fn=_effective_price_resolution,
+    ),
     NLPriceSensorDescription(key="current_provider", translation_key="current_provider", value_fn=_provider),
     NLPriceSensorDescription(
         key="last_successful_update",
@@ -411,10 +428,14 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
         if data is None:
             return {}
         supplier_profile = _selected_supplier_profile(self.entry)
+        cheapest_blocks = _cheapest_block_attributes(data)
         return {
             "prices": [entry.as_attribute() for entry in data.result.prices],
             "prices_today": [entry.as_attribute() for entry in data.result.prices_today],
             "prices_tomorrow": [entry.as_attribute() for entry in data.result.prices_tomorrow],
+            "raw_prices": [entry.as_attribute() for entry in data.result.raw_prices],
+            "raw_prices_today": [entry.as_attribute() for entry in data.result.source_prices_today],
+            "raw_prices_tomorrow": [entry.as_attribute() for entry in data.result.source_prices_tomorrow],
             "all_in_prices_today": build_all_in_price_attributes(
                 data.result.prices_today, _energy_tax(self.entry), supplier_profile, _vat(self.entry)
             ),
@@ -423,6 +444,11 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
             ),
             "raw_today": data.result.raw_today,
             "raw_tomorrow": data.result.raw_tomorrow,
+            "price_resolution": data.result.effective_price_resolution,
+            "requested_price_resolution": data.result.requested_price_resolution,
+            "effective_price_resolution": data.result.effective_price_resolution,
+            "raw_price_resolution": data.result.raw_price_resolution,
+            "resolution_converted": data.result.resolution_converted,
             "provider": data.result.provider,
             "provider_name": PROVIDER_NAMES.get(data.result.provider, data.result.provider),
             "fallback_used": data.fallback_used,
@@ -438,4 +464,27 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
             "supplier_profile_last_verified": supplier_profile.last_verified,
             "supplier_profile_source_url": supplier_profile.source_url,
             "supplier_profile": supplier_profile_to_dict(supplier_profile),
+            **cheapest_blocks,
         }
+
+
+def _cheapest_block_attributes(data: PriceData) -> dict[str, Any]:
+    prices = data.result.prices_today
+    if data.result.effective_price_resolution == PRICE_RESOLUTION_QUARTER_HOUR:
+        durations = {
+            "cheapest_15_minutes": 15,
+            "cheapest_30_minutes": 30,
+            "cheapest_45_minutes": 45,
+            "cheapest_1_hour": 60,
+            "cheapest_2_hours": 120,
+            "cheapest_3_hours": 180,
+            "cheapest_4_hours": 240,
+        }
+    else:
+        durations = {
+            "cheapest_1_hour": 60,
+            "cheapest_2_hours": 120,
+            "cheapest_3_hours": 180,
+            "cheapest_4_hours": 240,
+        }
+    return {key: find_cheapest_consecutive_block(prices, minutes) for key, minutes in durations.items()}

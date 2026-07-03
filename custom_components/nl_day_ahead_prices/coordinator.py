@@ -19,10 +19,14 @@ from .const import (
     CONF_CURRENCY,
     CONF_ENABLE_ENTSOE,
     CONF_ENTSOE_API_TOKEN,
+    CONF_PRICE_RESOLUTION,
     CONF_PRIMARY_PROVIDER,
+    CONF_SELECTED_SUPPLIER,
     DEFAULT_COUNTRY,
     DEFAULT_CURRENCY,
+    DEFAULT_PRICE_RESOLUTION,
     DEFAULT_PRIMARY_PROVIDER,
+    DEFAULT_SELECTED_SUPPLIER,
     DOMAIN,
     PROVIDER_CACHE,
     PROVIDER_ENERGY_CHARTS,
@@ -31,6 +35,13 @@ from .const import (
     UPDATE_INTERVAL,
 )
 from .models import PriceData, PriceEntry, ProviderResult
+from .price_resolution import (
+    PRICE_RESOLUTION_AUTO,
+    convert_prices_to_resolution,
+    get_supplier_price_resolution,
+    infer_price_resolution,
+    normalize_price_resolution,
+)
 from .providers import (
     BasePriceProvider,
     EnergyChartsProvider,
@@ -39,6 +50,7 @@ from .providers import (
     ProviderError,
     async_fetch_with_fallback,
 )
+from .supplier_profiles import load_supplier_profiles
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,6 +82,7 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
                 return cached
             raise UpdateFailed(str(err)) from err
 
+        result = self._convert_result_resolution(result, now)
         data = PriceData(result=result, fallback_used=fallback_used, last_successful_update=now)
         await self._async_store_cached(data)
         data.errors = errors
@@ -106,6 +119,12 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
                 "provider": data.result.provider,
                 "prices_today": [entry.as_attribute() for entry in data.result.prices_today],
                 "prices_tomorrow": [entry.as_attribute() for entry in data.result.prices_tomorrow],
+                "raw_prices_today": [entry.as_attribute() for entry in data.result.source_prices_today],
+                "raw_prices_tomorrow": [entry.as_attribute() for entry in data.result.source_prices_tomorrow],
+                "raw_price_resolution": data.result.raw_price_resolution,
+                "requested_price_resolution": data.result.requested_price_resolution,
+                "effective_price_resolution": data.result.effective_price_resolution,
+                "resolution_converted": data.result.resolution_converted,
                 "raw_today": data.result.raw_today,
                 "raw_tomorrow": data.result.raw_tomorrow,
                 "last_successful_update": data.last_successful_update.isoformat()
@@ -122,6 +141,12 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
             provider=PROVIDER_CACHE,
             prices_today=_deserialize_prices(cached.get("prices_today", [])),
             prices_tomorrow=_deserialize_prices(cached.get("prices_tomorrow", [])),
+            raw_prices_today=_deserialize_prices(cached.get("raw_prices_today", [])),
+            raw_prices_tomorrow=_deserialize_prices(cached.get("raw_prices_tomorrow", [])),
+            raw_price_resolution=cached.get("raw_price_resolution", "hourly"),
+            requested_price_resolution=cached.get("requested_price_resolution", DEFAULT_PRICE_RESOLUTION),
+            effective_price_resolution=cached.get("effective_price_resolution", "hourly"),
+            resolution_converted=bool(cached.get("resolution_converted", False)),
             raw_today=cached.get("raw_today"),
             raw_tomorrow=cached.get("raw_tomorrow"),
         )
@@ -132,6 +157,47 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
             last_successful_update=datetime.fromisoformat(last_update) if last_update else None,
             from_cache=True,
         )
+
+    def _convert_result_resolution(self, result: ProviderResult, now: datetime) -> ProviderResult:
+        raw_prices_today = list(result.prices_today)
+        raw_prices_tomorrow = list(result.prices_tomorrow)
+        raw_price_resolution = result.raw_price_resolution or infer_price_resolution(
+            [*raw_prices_today, *raw_prices_tomorrow]
+        )
+        requested_resolution = self._requested_price_resolution()
+        effective_resolution = self._effective_price_resolution(requested_resolution, now)
+        prices_today = convert_prices_to_resolution(raw_prices_today, effective_resolution, raw_price_resolution)
+        prices_tomorrow = convert_prices_to_resolution(raw_prices_tomorrow, effective_resolution, raw_price_resolution)
+        return ProviderResult(
+            provider=result.provider,
+            prices_today=prices_today,
+            prices_tomorrow=prices_tomorrow,
+            raw_today=result.raw_today,
+            raw_tomorrow=result.raw_tomorrow,
+            raw_prices_today=raw_prices_today,
+            raw_prices_tomorrow=raw_prices_tomorrow,
+            raw_price_resolution=raw_price_resolution,
+            requested_price_resolution=requested_resolution,
+            effective_price_resolution=effective_resolution,
+            resolution_converted=raw_price_resolution != effective_resolution,
+        )
+
+    def _requested_price_resolution(self) -> str:
+        options = self.entry.options
+        data = self.entry.data
+        return normalize_price_resolution(options.get(CONF_PRICE_RESOLUTION, data.get(CONF_PRICE_RESOLUTION)))
+
+    def _effective_price_resolution(self, requested_resolution: str, now: datetime) -> str:
+        if requested_resolution != PRICE_RESOLUTION_AUTO:
+            return requested_resolution
+        options = self.entry.options
+        data = self.entry.data
+        selected_supplier = options.get(CONF_SELECTED_SUPPLIER, data.get(CONF_SELECTED_SUPPLIER, DEFAULT_SELECTED_SUPPLIER))
+        profiles = load_supplier_profiles()
+        profile = profiles.get(selected_supplier) or profiles.get(DEFAULT_SELECTED_SUPPLIER)
+        if profile is None:
+            return "hourly"
+        return get_supplier_price_resolution(profile, now)
 
 
 def _deserialize_prices(entries: list[dict[str, Any]]) -> list[PriceEntry]:

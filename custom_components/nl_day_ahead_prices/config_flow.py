@@ -22,6 +22,7 @@ from .const import (
     CONF_ENERGY_TAX,
     CONF_ENERGY_TAX_INCL_VAT,
     CONF_ENTSOE_API_TOKEN,
+    CONF_PRICE_RESOLUTION,
     CONF_PRIMARY_PROVIDER,
     CONF_SELECTED_SUPPLIER,
     CONF_VAT,
@@ -34,6 +35,7 @@ from .const import (
     DEFAULT_CUSTOM_SELL_FEE_INCLUDES_VAT,
     DEFAULT_CUSTOM_SUPPLIER_NAME,
     DEFAULT_ENERGY_TAX,
+    DEFAULT_PRICE_RESOLUTION,
     DEFAULT_PRIMARY_PROVIDER,
     DEFAULT_SELECTED_SUPPLIER,
     DEFAULT_VAT,
@@ -42,6 +44,7 @@ from .const import (
     PROVIDER_ENERGY_CHARTS,
     PROVIDER_NORD_POOL,
 )
+from .price_resolution import PRICE_RESOLUTION_AUTO, PRICE_RESOLUTION_HOURLY, PRICE_RESOLUTION_QUARTER_HOUR
 from .supplier_profiles import load_supplier_profiles
 
 CUSTOM_SUPPLIER_KEY = "custom"
@@ -172,6 +175,16 @@ class NLDayAheadPricesOptionsFlow(config_entries.OptionsFlow):
                     CONF_SELECTED_SUPPLIER,
                     default=selected_supplier,
                 ): vol.In(supplier_choices),
+                vol.Optional(
+                    CONF_PRICE_RESOLUTION,
+                    default=data.get(CONF_PRICE_RESOLUTION, DEFAULT_PRICE_RESOLUTION),
+                ): vol.In(
+                    [
+                        PRICE_RESOLUTION_AUTO,
+                        PRICE_RESOLUTION_HOURLY,
+                        PRICE_RESOLUTION_QUARTER_HOUR,
+                    ]
+                ),
                 vol.Optional(
                     CONF_ENERGY_TAX,
                     default=data.get(CONF_ENERGY_TAX, data.get(CONF_ENERGY_TAX_INCL_VAT, DEFAULT_ENERGY_TAX)),

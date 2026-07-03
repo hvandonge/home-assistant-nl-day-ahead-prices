@@ -47,9 +47,8 @@ The config flow defaults to:
 The integration uses Home Assistant's shared `aiohttp` websession, modern async config entries, options flow, and a `DataUpdateCoordinator`. API failures do not block startup as long as cached prices are available.
 
 Nord Pool can publish Dutch day-ahead prices in 15-minute market time units.
-This integration aggregates those values into duration-weighted hourly prices
-before exposing the sensors, so `Next Hour Market Price` represents the average
-price for the next full clock hour.
+This integration preserves those source intervals and exposes hourly or
+quarter-hour prices depending on the selected price interval option.
 
 ## Troubleshooting
 
@@ -79,6 +78,7 @@ the built-in Dutch dynamic supplier profiles, or select **Custom supplier** and
 enter your own values.
 
 - `selected_supplier`: default `Zonneplan`
+- `price_resolution`: default `auto`
 - `energy_tax`: default `0.1108` EUR/kWh, including VAT
 - `vat`: default `0.21`
 
@@ -97,13 +97,17 @@ screen shows the custom tariff fields:
 Formula:
 
 ```text
-all_in = market_price + energy_tax + supplier_purchase_fee_incl_vat
+all_in = market_price * (1 + vat) + energy_tax + supplier_purchase_fee_incl_vat
 ```
 
 When a supplier profile marks the purchase fee as excluding VAT, the integration
 uses `purchase_fee_electricity * (1 + vat)` first.
 
-`Current Market Price` and `Next Hour Market Price` are bare market prices.
+The market price from the day-ahead providers is a bare wholesale price. The
+integration applies VAT to that market price before adding energy tax and the
+supplier purchase fee.
+
+`Current Market Price` and `Next Market Price` are bare market prices.
 They do not include taxes, VAT, or supplier purchase fees.
 
 The day summary sensors are all-in prices using your configured tax and
@@ -114,8 +118,32 @@ supplier settings:
 - `Lowest Price Today`
 - `Highest Price Today`
 
-Use `Current All-in Price` and `Next Hour All-in Price` for all-in prices for
-the current and next hour.
+Use `Current All-in Price` and `Next All-in Price` for all-in prices for the
+current and next interval.
+
+## Hourly And Quarter-Hour Prices
+
+Some suppliers settle electricity per hour, while others use quarter-hour
+prices. The integration can expose either format:
+
+- `auto`: choose the resolution from the selected supplier profile.
+- `hourly`: always expose hourly prices.
+- `quarter_hour`: always expose quarter-hour prices.
+
+Zonneplan uses hourly prices until 2026-07-31 and quarter-hour prices from
+2026-08-01. In `auto` mode this switch is handled from the supplier profile.
+
+When converting quarter-hour prices to hourly prices, the integration uses the
+average of the available quarter-hour entries in that hour. When converting
+hourly prices to quarter-hour prices, each quarter receives the same price as
+the source hour.
+
+The original source prices remain available through:
+
+- `raw_prices`
+- `raw_prices_today`
+- `raw_prices_tomorrow`
+- `raw_price_resolution`
 
 ### Supplier Tariffs
 
@@ -165,7 +193,7 @@ custom purchase fee.
 Sensors:
 
 - Current Market Price
-- Next Hour Market Price
+- Next Market Price
 - Average Price Today
 - Average Price Tomorrow
 - Lowest Price Today
@@ -175,13 +203,14 @@ Sensors:
 - Time Of Lowest Price Today
 - Time Of Highest Price Today
 - Current All-in Price
-- Next Hour All-in Price
+- Next All-in Price
 - Average All-in Price Today
 - Lowest All-in Price Today
 - Highest All-in Price Today
 - Supplier Purchase Fee
 - Supplier Monthly Fee
 - Selected Supplier
+- Effective Price Resolution
 - Current Provider
 - Last Successful Update
 
@@ -198,6 +227,14 @@ Each price sensor exposes ApexCharts-friendly attributes:
 - `prices_tomorrow`
 - `all_in_prices_today`
 - `all_in_prices_tomorrow`
+- `raw_prices`
+- `raw_prices_today`
+- `raw_prices_tomorrow`
+- `raw_price_resolution`
+- `price_resolution`
+- `requested_price_resolution`
+- `effective_price_resolution`
+- `resolution_converted`
 - `raw_today`
 - `raw_tomorrow`
 - `provider`
@@ -246,6 +283,24 @@ series:
       return entity.attributes.prices.map((entry) => {
         return [new Date(entry.time), entry.price];
       });
+```
+
+For quarter-hour prices, the same data generator works:
+
+```yaml
+data_generator: |
+  return entity.attributes.prices.map((entry) => {
+    return [new Date(entry.time), entry.price];
+  });
+```
+
+For today only:
+
+```yaml
+data_generator: |
+  return entity.attributes.prices_today.map((entry) => {
+    return [new Date(entry.time), entry.price];
+  });
 ```
 
 ## Migration From hass-entso-e

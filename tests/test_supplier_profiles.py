@@ -32,7 +32,7 @@ def test_all_in_price_with_supplier_fee_including_vat() -> None:
     )
 
     assert calculate_supplier_fee(profile, 0.21) == 0.02
-    assert calculate_all_in_price(0.1, 0.1108, profile, 0.21) == pytest.approx(0.2308)
+    assert calculate_all_in_price(0.1, 0.1108, profile, 0.21) == pytest.approx(0.2518)
 
 
 def test_all_in_price_with_supplier_fee_excluding_vat() -> None:
@@ -50,7 +50,7 @@ def test_all_in_price_with_supplier_fee_excluding_vat() -> None:
     )
 
     assert calculate_supplier_fee(profile, 0.21) == 0.0242
-    assert calculate_all_in_price(0.1, 0.1108, profile, 0.21) == 0.235
+    assert calculate_all_in_price(0.1, 0.1108, profile, 0.21) == 0.256
 
 
 def test_custom_supplier_profile() -> None:
@@ -71,13 +71,13 @@ def test_custom_supplier_profile() -> None:
 
     assert profile.name == "Mijn leverancier"
     assert calculate_monthly_fee(profile) == 7.5
-    assert calculate_all_in_price(0.1, 0.1108, profile, 0.21) == pytest.approx(0.2288)
+    assert calculate_all_in_price(0.1, 0.1108, profile, 0.21) == pytest.approx(0.2498)
 
 
 def test_missing_supplier_profile_uses_zero_fee() -> None:
     assert calculate_supplier_fee(None, 0.21) == 0.0
     assert calculate_monthly_fee(None) == 0.0
-    assert calculate_all_in_price(0.1, 0.1108, None, 0.21) == 0.2108
+    assert calculate_all_in_price(0.1, 0.1108, None, 0.21) == 0.2318
 
 
 def test_supplier_profile_json_validation_skips_invalid_profile(tmp_path, monkeypatch) -> None:
@@ -135,5 +135,5 @@ def test_all_in_price_attributes_for_today() -> None:
     prices = [PriceEntry(datetime(2026, 7, 2, 14), 0.1)]
 
     assert build_all_in_price_attributes(prices, 0.1108, profile, 0.21) == [
-        {"time": "2026-07-02T14:00:00", "price": 0.2308}
+        {"time": "2026-07-02T14:00:00", "price": 0.2518}
     ]

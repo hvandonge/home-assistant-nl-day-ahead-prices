@@ -18,7 +18,7 @@ def test_parse_nord_pool_converts_to_eur_kwh() -> None:
     assert prices[0].price == 0.1015
 
 
-def test_parse_nord_pool_aggregates_quarter_hour_prices_to_hourly_average() -> None:
+def test_parse_nord_pool_preserves_quarter_hour_prices() -> None:
     payload = {
         "multiAreaEntries": [
             {
@@ -46,8 +46,8 @@ def test_parse_nord_pool_aggregates_quarter_hour_prices_to_hourly_average() -> N
 
     prices = parse_nord_pool(payload, "NL")
 
-    assert len(prices) == 1
-    assert prices[0].price == 0.25
+    assert len(prices) == 4
+    assert [entry.price for entry in prices] == [0.1, 0.2, 0.3, 0.4]
 
 
 def test_parse_energy_charts_filters_day_and_converts_to_eur_kwh() -> None:

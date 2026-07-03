@@ -25,7 +25,7 @@ def calculate_all_in_price(
     vat: float,
 ) -> float:
     """Calculate the all-in electricity price in EUR/kWh."""
-    return market_price + energy_tax + calculate_supplier_fee(supplier_profile, vat)
+    return market_price * (1 + vat) + energy_tax + calculate_supplier_fee(supplier_profile, vat)
 
 
 def calculate_monthly_fee(profile: SupplierProfile | dict[str, Any] | None) -> float:

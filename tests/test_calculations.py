@@ -17,7 +17,7 @@ def test_convert_eur_kwh_is_unchanged() -> None:
 
 
 def test_all_in_formula() -> None:
-    assert calculate_all_in_price(0.1, 0.1108, 0.01653, 0.21) == 0.2308013
+    assert calculate_all_in_price(0.1, 0.1108, 0.01653, 0.21) == 0.2518013
 
 
 def test_next_hour_all_in_formula_example() -> None:
@@ -31,13 +31,23 @@ def test_next_hour_all_in_formula_example() -> None:
         energy_tax_incl_vat,
         supplier_markup_excl_vat,
         vat,
-    ) == 0.130192
+    ) == 0.130402
 
 
 def test_next_hour_price_uses_next_full_hour_entry() -> None:
     prices = [
         PriceEntry(datetime(2026, 7, 2, 10, tzinfo=timezone.utc), 0.10),
         PriceEntry(datetime(2026, 7, 2, 11, tzinfo=timezone.utc), 0.20),
+    ]
+
+    assert next_hour_price(prices, datetime(2026, 7, 2, 10, 12, tzinfo=timezone.utc)) == 0.20
+
+
+def test_next_hour_price_uses_next_full_quarter_entry() -> None:
+    prices = [
+        PriceEntry(datetime(2026, 7, 2, 10, 0, tzinfo=timezone.utc), 0.10),
+        PriceEntry(datetime(2026, 7, 2, 10, 15, tzinfo=timezone.utc), 0.20),
+        PriceEntry(datetime(2026, 7, 2, 10, 30, tzinfo=timezone.utc), 0.30),
     ]
 
     assert next_hour_price(prices, datetime(2026, 7, 2, 10, 12, tzinfo=timezone.utc)) == 0.20

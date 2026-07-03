@@ -27,10 +27,18 @@
           "enable_entsoe": "Enable optional ENTSO-E fallback",
           "entsoe_api_token": "ENTSO-E API token",
           "selected_supplier": "Supplier",
+          "price_resolution": "Price interval",
           "energy_tax": "Energy tax per kWh",
           "energy_tax_incl_vat": "Energy tax including VAT",
           "supplier_markup_excl_vat": "Supplier markup excluding VAT",
           "vat": "VAT"
+        },
+        "options": {
+          "price_resolution": {
+            "auto": "Automatic based on supplier",
+            "hourly": "Hourly prices",
+            "quarter_hour": "Quarter-hour prices"
+          }
         }
       },
       "supplier_summary": {
@@ -59,7 +67,7 @@
   "entity": {
     "sensor": {
       "current_market_price": { "name": "Current Market Price" },
-      "next_hour_market_price": { "name": "Next Hour Market Price" },
+      "next_hour_market_price": { "name": "Next Market Price" },
       "average_price_today": { "name": "Average Price Today" },
       "average_price_tomorrow": { "name": "Average Price Tomorrow" },
       "lowest_price_today": { "name": "Lowest Price Today" },
@@ -69,13 +77,14 @@
       "time_of_lowest_price_today": { "name": "Time Of Lowest Price Today" },
       "time_of_highest_price_today": { "name": "Time Of Highest Price Today" },
       "current_all_in_price": { "name": "Current All-in Price" },
-      "next_hour_all_in_price": { "name": "Next Hour All-in Price" },
+      "next_hour_all_in_price": { "name": "Next All-in Price" },
       "average_all_in_price_today": { "name": "Average All-in Price Today" },
       "lowest_all_in_price_today": { "name": "Lowest All-in Price Today" },
       "highest_all_in_price_today": { "name": "Highest All-in Price Today" },
       "supplier_purchase_fee": { "name": "Supplier Purchase Fee" },
       "supplier_monthly_fee": { "name": "Supplier Monthly Fee" },
       "selected_supplier": { "name": "Selected Supplier" },
+      "effective_price_resolution": { "name": "Effective Price Resolution" },
       "current_provider": { "name": "Current Provider" },
       "last_successful_update": { "name": "Last Successful Update" }
     },

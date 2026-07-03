@@ -21,6 +21,7 @@ from .const import (
     REQUEST_TIMEOUT,
 )
 from .models import PriceEntry, ProviderResult, convert_to_eur_kwh
+from .price_resolution import infer_price_resolution
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,12 +90,15 @@ class NordPoolProvider(BasePriceProvider):
     async def async_fetch(self, today: date, tomorrow: date) -> ProviderResult:
         today_raw = await self._fetch_day(today)
         tomorrow_raw = await self._fetch_day(tomorrow)
+        prices_today = parse_nord_pool(today_raw, self.country)
+        prices_tomorrow = parse_nord_pool(tomorrow_raw, self.country)
         return ProviderResult(
             provider=self.key,
-            prices_today=parse_nord_pool(today_raw, self.country),
-            prices_tomorrow=parse_nord_pool(tomorrow_raw, self.country),
+            prices_today=prices_today,
+            prices_tomorrow=prices_tomorrow,
             raw_today=today_raw,
             raw_tomorrow=tomorrow_raw,
+            raw_price_resolution=infer_price_resolution([*prices_today, *prices_tomorrow]),
         )
 
     async def _fetch_day(self, day: date) -> Any:
@@ -129,6 +133,7 @@ class EnergyChartsProvider(BasePriceProvider):
             prices_tomorrow=tomorrow_prices,
             raw_today=raw,
             raw_tomorrow=raw,
+            raw_price_resolution=infer_price_resolution([*today_prices, *tomorrow_prices]),
         )
 
 
@@ -150,12 +155,15 @@ class EntsoeProvider(BasePriceProvider):
     async def async_fetch(self, today: date, tomorrow: date) -> ProviderResult:
         today_raw = await self._fetch_day(today)
         tomorrow_raw = await self._fetch_day(tomorrow)
+        prices_today = parse_entsoe_xml(today_raw)
+        prices_tomorrow = parse_entsoe_xml(tomorrow_raw)
         return ProviderResult(
             provider=self.key,
-            prices_today=parse_entsoe_xml(today_raw),
-            prices_tomorrow=parse_entsoe_xml(tomorrow_raw),
+            prices_today=prices_today,
+            prices_tomorrow=prices_tomorrow,
             raw_today=today_raw,
             raw_tomorrow=tomorrow_raw,
+            raw_price_resolution=infer_price_resolution([*prices_today, *prices_tomorrow]),
         )
 
     async def _fetch_day(self, day: date) -> str:
@@ -194,14 +202,9 @@ async def async_fetch_with_fallback(
 
 
 def parse_nord_pool(payload: Any, area: str) -> list[PriceEntry]:
-    """Parse Nord Pool's public day-ahead payload.
-
-    Nord Pool can return 15-minute MTU rows for NL. Home Assistant sensors in
-    this integration expose hourly prices, so multiple rows in the same hour
-    are aggregated with a duration-weighted average.
-    """
+    """Parse Nord Pool's public day-ahead payload."""
     entries = payload.get("multiAreaEntries") or payload.get("MultiAreaEntries") or []
-    hourly_totals: dict[datetime, tuple[float, float]] = {}
+    prices: list[PriceEntry] = []
     for row in entries:
         price_value = row.get("entryPerArea", {}).get(area)
         if price_value is None:
@@ -212,21 +215,10 @@ def parse_nord_pool(payload: Any, area: str) -> list[PriceEntry]:
         if not start:
             continue
         start_dt = _parse_datetime(start)
-        end = row.get("deliveryEnd") or row.get("DeliveryEnd")
-        end_dt = _parse_datetime(end) if end else start_dt + timedelta(hours=1)
-        hour_start = start_dt.replace(minute=0, second=0, microsecond=0)
-        duration = max((end_dt - start_dt).total_seconds(), 0)
-        if duration == 0:
-            duration = 3600
         price = convert_to_eur_kwh(float(price_value), "EUR/MWh")
-        weighted_total, duration_total = hourly_totals.get(hour_start, (0.0, 0.0))
-        hourly_totals[hour_start] = (weighted_total + price * duration, duration_total + duration)
+        prices.append(PriceEntry(start_dt, price))
 
-    return [
-        PriceEntry(hour, weighted_total / duration_total)
-        for hour, (weighted_total, duration_total) in sorted(hourly_totals.items(), key=lambda item: item[0])
-        if duration_total
-    ]
+    return sorted(prices, key=lambda entry: entry.time)
 
 
 def parse_energy_charts(payload: Any, target_day: date) -> list[PriceEntry]:
@@ -268,8 +260,7 @@ def parse_entsoe_xml(payload: str) -> list[PriceEntry]:
             continue
         start = datetime.fromisoformat(start_node.text.replace("Z", "+00:00"))
         resolution = period.findtext(f"{namespace}resolution", default="PT60M")
-        if resolution != "PT60M":
-            _LOGGER.debug("Unsupported ENTSO-E resolution %s, assuming hourly positions", resolution)
+        interval = _parse_entsoe_resolution(resolution)
         for point in period.findall(f"{namespace}Point"):
             position = point.findtext(f"{namespace}position")
             price = point.findtext(f"{namespace}price.amount")
@@ -277,8 +268,19 @@ def parse_entsoe_xml(payload: str) -> list[PriceEntry]:
                 continue
             prices.append(
                 PriceEntry(
-                    start + timedelta(hours=int(position) - 1),
+                    start + interval * (int(position) - 1),
                     convert_to_eur_kwh(float(price), "EUR/MWh"),
                 )
             )
     return sorted(prices, key=lambda entry: entry.time)
+
+
+def _parse_entsoe_resolution(value: str) -> timedelta:
+    if value == "PT15M":
+        return timedelta(minutes=15)
+    if value == "PT30M":
+        return timedelta(minutes=30)
+    if value == "PT60M":
+        return timedelta(hours=1)
+    _LOGGER.debug("Unsupported ENTSO-E resolution %s, assuming hourly positions", value)
+    return timedelta(hours=1)
