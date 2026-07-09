@@ -1,4 +1,4 @@
-"""Data models and price helpers for NL Day Ahead Prices."""
+"""Data models and price helpers for EnerPrice."""
 
 from __future__ import annotations
 

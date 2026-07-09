@@ -1,8 +1,38 @@
-# NL Day Ahead Prices
+# EnerPrice
 
-![NL Day Ahead Prices logo](brand/logo.png)
+<p align="center">
+  <img src="brand/logo.png" alt="EnerPrice logo" width="180">
+</p>
 
-`home-assistant-nl-day-ahead-prices` is a HACS-compatible Home Assistant custom integration for Dutch day-ahead electricity prices.
+<p align="center">
+  <strong>EnerPrice</strong><br>
+  Dynamic energy prices for Home Assistant
+</p>
+
+[![GitHub Release](https://img.shields.io/github/v/release/LenFaki/home-assistant-nl-day-ahead-prices?style=flat-square)](https://github.com/LenFaki/home-assistant-nl-day-ahead-prices/releases)
+[![Status](https://img.shields.io/badge/status-stable-green.svg?style=flat-square)](https://github.com/LenFaki/home-assistant-nl-day-ahead-prices)
+[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=flat-square)](https://hacs.xyz/)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2?logo=homeassistant&logoColor=white&style=flat-square)](https://www.home-assistant.io/)
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=LenFaki&repository=home-assistant-nl-day-ahead-prices&category=integration)
+[![Tests](https://github.com/LenFaki/home-assistant-nl-day-ahead-prices/actions/workflows/ci.yml/badge.svg)](https://github.com/LenFaki/home-assistant-nl-day-ahead-prices/actions/workflows/ci.yml)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20EnerPrice-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/lenfaki)
+
+EnerPrice is a HACS-compatible Home Assistant custom integration for Dutch
+dynamic energy prices.
+
+Previously known as **NL Day Ahead Prices**, EnerPrice provides day-ahead
+electricity prices, quarter-hour prices, supplier-specific all-in tariffs,
+price analysis, best periods, trends, forecasts and energy advice.
+
+Slimme day-ahead stroomprijzen, all-in tarieven, kwartierprijzen, analyses en
+energieadvies voor Home Assistant.
+
+## Previously Known As NL Day Ahead Prices
+
+EnerPrice was previously named **NL Day Ahead Prices**. The repository and
+integration domain remain `home-assistant-nl-day-ahead-prices` and
+`nl_day_ahead_prices` for backwards compatibility. Existing v1.x unique IDs,
+entity IDs, automations, and dashboards are not renamed by this release.
 
 It is inspired by the sensor and ApexCharts attribute shape of `hass-entso-e`, but it avoids depending on ENTSO-E by default. Prices are fetched from alternative providers with automatic fallback:
 
@@ -13,6 +43,105 @@ It is inspired by the sensor and ApexCharts attribute shape of `hass-entso-e`, b
 
 The default bidding zone is `NL`, currency is `EUR`, and all sensor prices are exposed as `EUR/kWh`. Provider prices in `EUR/MWh` are converted automatically.
 
+## EnerPrice v2.0
+
+### Price Advisor
+
+`sensor.nl_day_ahead_price_advisor` combines current all-in price, price score,
+rating, trend, and volatility into `excellent`, `good`, `neutral`, `avoid`, or
+`critical` advice. Its attributes provide a title, explanation, recommendation,
+best actions, avoided actions, and the signals behind the advice.
+
+### Price Score
+
+`sensor.nl_day_ahead_price_score` reports a robust `0-100` score where `100` is
+the cheapest available price and `0` the most expensive. It uses today plus
+tomorrow when available, supports negative prices, and exposes percentile,
+minimum, maximum, average, and a human-readable score label.
+
+The optional Today Score and Tomorrow Score sensors summarize an entire day,
+including volatility, cheapest 1/2/4-hour blocks, the most expensive hour, and
+negative/cheap/expensive minutes.
+
+### EV Charging Planner
+
+Call `nl_day_ahead_prices.find_best_charging_window` with required energy,
+charger power, and a deadline. It supports consecutive or split sessions,
+minimum session length, all-in or market prices, and both hourly and
+quarter-hour prices. The response includes timing, selected intervals, energy,
+cost, and alternatives.
+
+### Boiler Planner
+
+`nl_day_ahead_prices.find_best_heating_window` plans a boiler or heat-pump
+boiler for the cheapest requested duration, optionally before the price peak.
+
+Example: set `duration_minutes: 120` and a timezone-aware deadline at 07:00 to
+heat a boiler for two hours before morning use. Use `180` minutes to select the
+cheapest three-hour heat-pump boiler period.
+
+### Battery Strategy
+
+`nl_day_ahead_prices.find_battery_strategy` considers capacity, state of
+charge, charge/discharge power, SOC limits, round-trip efficiency, grid
+charging, and export. Arbitrage is recommended only when the price spread
+covers efficiency loss and a safety margin.
+
+### Solar Export Advisor
+
+The Export Advisor, Best Export Period, and Worst Export Period sensors use the
+supplier profile's export and feed-in fees. The
+`nl_day_ahead_prices.find_best_export_window` service can also estimate export
+revenue for a specified amount of energy.
+
+### Appliance Planner
+
+`nl_day_ahead_prices.find_best_appliance_window` plans flexible loads such as a
+washing machine, dishwasher, dryer, swimming-pool pump, or underfloor heating.
+It returns the recommended period, expected cost, reason, and an editable
+automation example.
+
+### Dashboard Generator
+
+`nl_day_ahead_prices.generate_dashboard_yaml` creates compact, full, or
+energy-advisor Lovelace YAML with prices, advice, score, ApexCharts, periods,
+supplier, resolution, provider, and tomorrow availability. Copy the returned
+YAML manually into a dashboard. ApexCharts Card must already be installed for
+the graph.
+
+### Automation Generator
+
+`nl_day_ahead_prices.generate_automation_yaml` creates editable examples for
+boilers, EV charging, cheap/expensive notifications, batteries, and appliances.
+Review entity IDs and planner settings before enabling generated YAML.
+
+### Example Automations
+
+The existing examples later in this README remain valid. V2 notification
+helpers add these optional, disabled-by-default triggers:
+
+```yaml
+automation:
+  - alias: Notify exceptional energy opportunity
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.nl_day_ahead_exceptional_opportunity_now
+        to: "on"
+    actions:
+      - action: notify.notify
+        data:
+          message: "EnerPrice found an exceptional energy opportunity."
+```
+
+### Backwards Compatibility
+
+- Domain remains `nl_day_ahead_prices`.
+- Existing v1.x sensor keys and unique IDs remain unchanged.
+- Existing price attributes and ApexCharts formats remain available.
+- The visible integration name is now EnerPrice.
+- New advanced entities are disabled by default where appropriate.
+- Supplier profile v1 fields are migrated in memory to the v2 profile schema.
+
 Release notes are available in [CHANGELOG.md](CHANGELOG.md) and on the GitHub
 releases page.
 
@@ -22,14 +151,14 @@ releases page.
 
 1. Add this repository as a custom repository in HACS.
 2. Select category `Integration`.
-3. Install **NL Day Ahead Prices**.
+3. Install **EnerPrice**.
 4. Restart Home Assistant.
 5. Add the integration from **Settings > Devices & services**.
 
 Important: the HACS `update.nl_day_ahead_prices_update` entity only belongs to
 HACS itself. It confirms that the custom repository is installed and can be
-updated. The actual price sensors are only created after you add **NL Day Ahead
-Prices** from **Settings > Devices & services > Add integration**.
+updated. The actual price sensors are only created after you add **EnerPrice**
+from **Settings > Devices & services > Add integration**.
 
 ### Manual
 
@@ -60,14 +189,15 @@ Assistant setup flow:
 1. Restart Home Assistant after installing or updating from HACS.
 2. Go to **Settings > Devices & services**.
 3. Select **Add integration**.
-4. Search for **NL Day Ahead Prices**.
+4. Search for **EnerPrice**. Older cached frontend data may still show
+   **NL Day Ahead Prices** until Home Assistant is restarted.
 5. Finish the setup form with the default `NL` zone.
 
 After that, the integration should create sensors such as
 `sensor.nl_day_ahead_prices_current_market_price` and
 `binary_sensor.nl_day_ahead_prices_tomorrow_prices_available`.
 
-If **NL Day Ahead Prices** is not listed in **Add integration**, Home Assistant
+If **EnerPrice** is not listed in **Add integration**, Home Assistant
 has not loaded the custom component yet. Restart Home Assistant and check
 **Settings > System > Logs** for `nl_day_ahead_prices`.
 
@@ -323,7 +453,7 @@ now:
   label: Now
 header:
   show: true
-  title: NL day-ahead prices (EUR/kWh)
+  title: EnerPrice (EUR/kWh)
 yaxis:
   - decimals: 3
 series:

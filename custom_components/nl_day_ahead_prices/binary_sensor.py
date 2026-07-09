@@ -16,7 +16,7 @@ from .analysis.periods import active_and_next
 from .const import DOMAIN
 from .coordinator import NLDayAheadPricesCoordinator
 from .models import PriceData
-from .sensor import _periods
+from .sensor import _periods, _v2_data
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -25,6 +25,7 @@ class PriceBinaryDescription(BinarySensorEntityDescription):
 
     value_fn: Callable[[PriceData, NLDayAheadPricesCoordinator, ConfigEntry], bool]
     period_type: str | None = None
+    v2_helper: bool = False
 
 
 DESCRIPTIONS = (
@@ -56,6 +57,58 @@ DESCRIPTIONS = (
             active_and_next(_periods(data, entry, coordinator.runtime_options, peak=True), dt_util.now())[0]
         ),
     ),
+    PriceBinaryDescription(
+        key="cheap_energy_now",
+        translation_key="cheap_energy_now",
+        entity_registry_enabled_default=False,
+        v2_helper=True,
+        value_fn=lambda data, coordinator, entry: (
+            coordinator.cached_analysis(
+                f"v2:{coordinator.hass.config.language}:price_score",
+                lambda: _v2_data(
+                    "price_score", data, dt_util.now(), entry, coordinator.hass.config.language
+                ),
+            ).get("state")
+            or 0
+        )
+        >= 70,
+    ),
+    PriceBinaryDescription(
+        key="expensive_energy_now",
+        translation_key="expensive_energy_now",
+        entity_registry_enabled_default=False,
+        v2_helper=True,
+        value_fn=lambda data, coordinator, entry: (
+            coordinator.cached_analysis(
+                f"v2:{coordinator.hass.config.language}:price_score",
+                lambda: _v2_data(
+                    "price_score", data, dt_util.now(), entry, coordinator.hass.config.language
+                ),
+            ).get("state")
+            or 100
+        )
+        < 40,
+    ),
+    PriceBinaryDescription(
+        key="exceptional_opportunity_now",
+        translation_key="exceptional_opportunity_now",
+        entity_registry_enabled_default=False,
+        v2_helper=True,
+        value_fn=lambda data, coordinator, entry: coordinator.cached_analysis(
+            f"v2:{coordinator.hass.config.language}:energy_opportunity",
+            lambda: _v2_data(
+                "energy_opportunity", data, dt_util.now(), entry, coordinator.hass.config.language
+            ),
+        ).get("state")
+        == "exceptional"
+        and coordinator.cached_analysis(
+            f"v2:{coordinator.hass.config.language}:price_advisor",
+            lambda: _v2_data(
+                "price_advisor", data, dt_util.now(), entry, coordinator.hass.config.language
+            ),
+        ).get("state")
+        == "excellent",
+    ),
 )
 
 
@@ -75,7 +128,14 @@ class PriceBinarySensor(CoordinatorEntity[NLDayAheadPricesCoordinator], BinarySe
         self.entry = entry
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "NL Day Ahead Prices"}
+        self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "EnerPrice"}
+
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Return stable v2 helper IDs while preserving all v1 naming."""
+        if self.entity_description.v2_helper:
+            return f"nl_day_ahead_{self.entity_description.key}"
+        return f"nl_day_ahead_prices_{self.entity_description.key}"
 
     @property
     def is_on(self) -> bool | None:

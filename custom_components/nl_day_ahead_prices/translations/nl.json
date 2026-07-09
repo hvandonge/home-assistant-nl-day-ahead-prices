@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "NL Day Ahead Prices",
+        "title": "EnerPrice",
         "description": "Stel Nederlandse day-ahead stroomprijzen in.",
         "data": {
           "name": "Naam",
@@ -18,7 +18,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "NL Day Ahead Prices opties",
+        "title": "EnerPrice-opties",
         "description": "Kies je provider, belastinginstellingen en leverancier. De velden voor eigen tarieven verschijnen alleen in de volgende stap wanneer Eigen leverancier is gekozen.",
         "data": {
           "country": "Land / biedzone",
@@ -64,6 +64,116 @@
       "supplier_profile_unavailable": "Het gekozen leveranciersprofiel is niet beschikbaar"
     }
   },
+  "services": {
+    "export_chart_data": {
+      "name": "Grafiekgegevens exporteren",
+      "description": "Exporteer markt- of all-inprijzen voor ApexCharts.",
+      "fields": {
+        "include_today": { "name": "Vandaag meenemen", "description": "Neem de prijzen van vandaag op." },
+        "include_tomorrow": { "name": "Morgen meenemen", "description": "Neem beschikbare prijzen van morgen op." },
+        "price_type": { "name": "Prijstype", "description": "Gebruik marktprijzen of all-inprijzen." },
+        "resolution": { "name": "Prijsinterval", "description": "Kies automatische, uur- of kwartierwaarden." },
+        "include_best_periods": { "name": "Beste periodes meenemen", "description": "Voeg de goedkoopste periodes toe." },
+        "include_peak_periods": { "name": "Piekperiodes meenemen", "description": "Voeg de duurste periodes toe." }
+      }
+    },
+    "generate_apexcharts_config": {
+      "name": "ApexCharts-configuratie maken",
+      "description": "Maak een aanpasbare ApexCharts-configuratie in YAML."
+    },
+    "find_best_charging_window": {
+      "name": "Beste EV-laadperiode zoeken",
+      "description": "Zoek de goedkoopste laadintervallen voor de ingestelde deadline.",
+      "fields": {
+        "target_energy_kwh": { "name": "Gewenste energie", "description": "Hoeveel energie de auto moet laden." },
+        "max_power_kw": { "name": "Maximaal laadvermogen", "description": "Het maximale vermogen van de lader." },
+        "earliest_start": { "name": "Vroegste start", "description": "Optioneel tijdstip waarop laden mag beginnen." },
+        "deadline": { "name": "Deadline", "description": "Tijdstip waarop het laden gereed moet zijn." },
+        "price_type": { "name": "Prijstype", "description": "Plan op marktprijzen of all-inprijzen." },
+        "require_consecutive": { "name": "Aaneengesloten laden", "description": "Gebruik één aaneengesloten laadperiode." },
+        "minimum_session_minutes": { "name": "Minimale sessieduur", "description": "Minimale duur van een laadsessie." },
+        "allow_split_sessions": { "name": "Gesplitste sessies toestaan", "description": "Verdeel het laden over meerdere goedkope periodes." },
+        "round_to_resolution": { "name": "Afronden op prijsinterval", "description": "Rond de laadduur af op uur- of kwartiergrenzen." }
+      }
+    },
+    "find_best_heating_window": {
+      "name": "Beste verwarmingsperiode zoeken",
+      "description": "Plan de goedkoopste periode voor een boiler of warmtepompboiler.",
+      "fields": {
+        "duration_minutes": { "name": "Duur", "description": "Gewenste verwarmingsduur in minuten." },
+        "earliest_start": { "name": "Vroegste start", "description": "Optioneel tijdstip waarop verwarmen mag beginnen." },
+        "deadline": { "name": "Deadline", "description": "Tijdstip waarop het verwarmen gereed moet zijn." },
+        "prefer_before_peak": { "name": "Voor piekprijs plannen", "description": "Geef voorkeur aan een periode vóór de volgende prijspiek." },
+        "price_type": { "name": "Prijstype", "description": "Plan op marktprijzen of all-inprijzen." },
+        "minimum_gap_minutes": { "name": "Minimale tussenruimte", "description": "Minimale ruimte vóór de prijspiek." }
+      }
+    },
+    "find_battery_strategy": {
+      "name": "Batterijstrategie zoeken",
+      "description": "Zoek laad- en ontlaadperiodes met correctie voor efficiëntieverlies.",
+      "fields": {
+        "battery_capacity_kwh": { "name": "Batterijcapaciteit", "description": "Totale bruikbare batterijcapaciteit." },
+        "current_soc_percent": { "name": "Huidige batterijlading", "description": "Huidige state of charge in procenten." },
+        "min_soc_percent": { "name": "Minimale batterijlading", "description": "Ondergrens voor de batterijlading." },
+        "max_soc_percent": { "name": "Maximale batterijlading", "description": "Bovengrens voor de batterijlading." },
+        "charge_power_kw": { "name": "Laadvermogen", "description": "Maximaal laadvermogen van de batterij." },
+        "discharge_power_kw": { "name": "Ontlaadvermogen", "description": "Maximaal ontlaadvermogen van de batterij." },
+        "roundtrip_efficiency_percent": { "name": "Rendement", "description": "Rendement van een volledige laad- en ontlaadcyclus." },
+        "price_type": { "name": "Prijstype", "description": "Optimaliseer op marktprijzen of all-inprijzen." },
+        "allow_grid_charge": { "name": "Laden vanaf het net toestaan", "description": "Sta laden tijdens goedkope netprijzen toe." },
+        "allow_export": { "name": "Terugleveren toestaan", "description": "Sta ontladen naar het elektriciteitsnet toe." }
+      }
+    },
+    "find_best_export_window": {
+      "name": "Beste terugleverperiode zoeken",
+      "description": "Zoek de meest waardevolle periode voor teruglevering.",
+      "fields": {
+        "expected_export_kwh": { "name": "Verwachte teruglevering", "description": "Optionele hoeveelheid terug te leveren energie." },
+        "duration_minutes": { "name": "Duur", "description": "Gewenste terugleverduur." },
+        "price_type": { "name": "Prijstype", "description": "Gebruik markt-, all-in- of verkoopprijzen." },
+        "include_supplier_sell_fee": { "name": "Leveranciersvergoeding meenemen", "description": "Verwerk de terugleververgoeding van de leverancier." }
+      }
+    },
+    "find_best_appliance_window": {
+      "name": "Beste apparaatperiode zoeken",
+      "description": "Plan een wasmachine, vaatwasser, droger, pomp of verwarming.",
+      "fields": {
+        "appliance_name": { "name": "Apparaatnaam", "description": "Naam van het te plannen apparaat." },
+        "duration_minutes": { "name": "Duur", "description": "Benodigde gebruiksduur." },
+        "earliest_start": { "name": "Vroegste start", "description": "Optioneel tijdstip waarop het apparaat mag starten." },
+        "deadline": { "name": "Deadline", "description": "Tijdstip waarop het apparaat klaar moet zijn." },
+        "energy_kwh": { "name": "Energieverbruik", "description": "Optioneel verwacht energieverbruik." },
+        "require_consecutive": { "name": "Aaneengesloten periode", "description": "Plan één ononderbroken gebruiksperiode." },
+        "avoid_peak_periods": { "name": "Piekperiodes vermijden", "description": "Vermijd de duurste prijsintervallen." }
+      }
+    },
+    "generate_dashboard_yaml": {
+      "name": "EnerPrice-dashboard maken",
+      "description": "Maak Lovelace-YAML die handmatig in een dashboard kan worden geplakt.",
+      "fields": {
+        "dashboard_type": { "name": "Dashboardtype", "description": "Kies een compact, volledig of adviesdashboard." },
+        "include_market_price": { "name": "Marktprijs tonen", "description": "Voeg de huidige marktprijs toe." },
+        "include_all_in_price": { "name": "All-inprijs tonen", "description": "Voeg de huidige all-inprijs toe." },
+        "include_supplier_info": { "name": "Leverancier tonen", "description": "Voeg leverancier- en tariefinformatie toe." },
+        "include_best_periods": { "name": "Beste periodes tonen", "description": "Voeg goedkope en dure periodes toe." },
+        "include_price_advisor": { "name": "Prijsadvies tonen", "description": "Voeg de prijsadviseur en prijsscore toe." },
+        "include_ev_planner": { "name": "EV-planner tonen", "description": "Voeg informatie over de EV-planner toe." },
+        "include_battery_strategy": { "name": "Batterijstrategie tonen", "description": "Voeg informatie over batterijoptimalisatie toe." },
+        "theme": { "name": "Thema", "description": "Kies automatische, lichte of donkere weergave." }
+      }
+    },
+    "generate_automation_yaml": {
+      "name": "EnerPrice-automatisering maken",
+      "description": "Maak aanpasbare Home Assistant-automatisering in YAML.",
+      "fields": {
+        "automation_type": { "name": "Automatiseringstype", "description": "Kies het gewenste energieproces." },
+        "target_entity": { "name": "Doelentiteit", "description": "Entiteit die door de automatisering wordt bediend." },
+        "notify_service": { "name": "Meldingsservice", "description": "Service voor goedkope of dure prijsmeldingen." },
+        "duration_minutes": { "name": "Duur", "description": "Voorgestelde gebruiksduur." },
+        "deadline": { "name": "Deadline", "description": "Optionele gewenste eindtijd." }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "current_market_price": { "name": "Huidige Marktprijs" },
@@ -95,14 +205,53 @@
       "next_8_hour_average_price": { "name": "Gemiddelde Prijs Komende 8 Uur" },
       "next_12_hour_average_price": { "name": "Gemiddelde Prijs Komende 12 Uur" },
       "next_24_hour_average_price": { "name": "Gemiddelde Prijs Komende 24 Uur" },
-      "current_price_trend": { "name": "Huidige Prijstrend" },
+      "current_price_trend": {
+        "name": "Huidige Prijstrend",
+        "state": {
+          "strongly_falling": "Sterk dalend",
+          "falling": "Dalend",
+          "stable": "Stabiel",
+          "rising": "Stijgend",
+          "strongly_rising": "Sterk stijgend"
+        }
+      },
       "next_trend_change_time": { "name": "Volgende Trendwijziging" },
-      "price_trajectory": { "name": "Prijsverloop" },
-      "price_rating": { "name": "Prijsbeoordeling" },
-      "price_level": { "name": "Prijsniveau" },
-      "volatility_today": { "name": "Volatiliteit Vandaag" },
-      "volatility_tomorrow": { "name": "Volatiliteit Morgen" },
-      "volatility_next_24h": { "name": "Volatiliteit Komende 24 Uur" },
+      "price_trajectory": {
+        "name": "Prijsverloop",
+        "state": {
+          "strongly_falling": "Sterk dalend",
+          "falling": "Dalend",
+          "stable": "Stabiel",
+          "rising": "Stijgend",
+          "strongly_rising": "Sterk stijgend"
+        }
+      },
+      "price_rating": {
+        "name": "Prijsbeoordeling",
+        "state": { "low": "Laag", "normal": "Normaal", "high": "Hoog" }
+      },
+      "price_level": {
+        "name": "Prijsniveau",
+        "state": {
+          "very_cheap": "Zeer goedkoop",
+          "cheap": "Goedkoop",
+          "normal": "Normaal",
+          "expensive": "Duur",
+          "very_expensive": "Zeer duur"
+        }
+      },
+      "volatility_today": {
+        "name": "Volatiliteit Vandaag",
+        "state": { "low": "Laag", "moderate": "Gemiddeld", "high": "Hoog", "very_high": "Zeer hoog" }
+      },
+      "volatility_tomorrow": {
+        "name": "Volatiliteit Morgen",
+        "state": { "low": "Laag", "moderate": "Gemiddeld", "high": "Hoog", "very_high": "Zeer hoog" }
+      },
+      "volatility_next_24h": {
+        "name": "Volatiliteit Komende 24 Uur",
+        "state": { "low": "Laag", "moderate": "Gemiddeld", "high": "Hoog", "very_high": "Zeer hoog" }
+      },
       "best_price_period_start": { "name": "Start Beste Prijsperiode" },
       "best_price_period_end": { "name": "Einde Beste Prijsperiode" },
       "best_price_period_remaining_minutes": { "name": "Resterende Minuten Beste Prijsperiode" },
@@ -112,13 +261,69 @@
       "peak_price_period_end": { "name": "Einde Piekprijsperiode" },
       "peak_price_period_remaining_minutes": { "name": "Resterende Minuten Piekprijsperiode" },
       "peak_price_period_progress_percent": { "name": "Voortgang Piekprijsperiode" },
-      "next_peak_price_period_start": { "name": "Start Volgende Piekprijsperiode" }
+      "next_peak_price_period_start": { "name": "Start Volgende Piekprijsperiode" },
+      "price_advisor": {
+        "name": "Prijsadviseur",
+        "state": {
+          "excellent": "Uitstekend",
+          "good": "Goed",
+          "neutral": "Neutraal",
+          "avoid": "Vermijden",
+          "critical": "Kritiek"
+        }
+      },
+      "price_score": { "name": "Prijsscore" },
+      "today_score": {
+        "name": "Dagscore Vandaag",
+        "state": {
+          "excellent": "Uitstekend",
+          "good": "Goed",
+          "normal": "Normaal",
+          "expensive": "Duur",
+          "volatile": "Volatiel"
+        }
+      },
+      "tomorrow_score": {
+        "name": "Dagscore Morgen",
+        "state": {
+          "excellent": "Uitstekend",
+          "good": "Goed",
+          "normal": "Normaal",
+          "expensive": "Duur",
+          "volatile": "Volatiel"
+        }
+      },
+      "export_advisor": {
+        "name": "Terugleveradvies",
+        "state": {
+          "excellent": "Uitstekend",
+          "good": "Goed",
+          "normal": "Normaal",
+          "expensive": "Duur",
+          "very_expensive": "Zeer duur"
+        }
+      },
+      "best_export_period": { "name": "Beste Terugleverperiode" },
+      "worst_export_period": { "name": "Slechtste Terugleverperiode" },
+      "energy_opportunity": {
+        "name": "Energiekans",
+        "state": {
+          "none": "Geen",
+          "small": "Klein",
+          "medium": "Gemiddeld",
+          "high": "Groot",
+          "exceptional": "Uitzonderlijk"
+        }
+      }
     },
     "binary_sensor": {
       "tomorrow_prices_available": { "name": "Prijzen Morgen Beschikbaar" },
       "api_data_available": { "name": "API/Data Beschikbaar" },
       "best_price_period": { "name": "Beste Prijsperiode" },
-      "peak_price_period": { "name": "Piekprijsperiode" }
+      "peak_price_period": { "name": "Piekprijsperiode" },
+      "cheap_energy_now": { "name": "Goedkope Energie Nu" },
+      "expensive_energy_now": { "name": "Dure Energie Nu" },
+      "exceptional_opportunity_now": { "name": "Uitzonderlijke Energiekans Nu" }
     },
     "number": {
       "best_period_duration_minutes": { "name": "Duur Beste Prijsperiode" },

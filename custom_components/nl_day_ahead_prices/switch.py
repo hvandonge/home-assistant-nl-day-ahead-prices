@@ -46,7 +46,12 @@ class AnalysisSwitch(CoordinatorEntity[NLDayAheadPricesCoordinator], SwitchEntit
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "NL Day Ahead Prices"}
+        self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "EnerPrice"}
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Keep the established v1 runtime entity ID pattern."""
+        return f"nl_day_ahead_prices_{self.entity_description.key}"
 
     @property
     def is_on(self) -> bool:

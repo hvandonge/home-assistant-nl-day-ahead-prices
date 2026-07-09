@@ -1,4 +1,4 @@
-"""Sensors for NL Day Ahead Prices."""
+"""Sensors for EnerPrice."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .advisor import build_price_advice
 from .analysis.forecast import average_next_period
 from .analysis.periods import active_and_next, find_price_periods
 from .analysis.rating import price_ratings
@@ -25,6 +26,7 @@ from .calculations import (
     build_all_in_price_attributes,
     calculate_all_in_price,
     calculate_monthly_fee,
+    calculate_supplier_export_fee,
     calculate_supplier_fee,
 )
 from .const import (
@@ -76,6 +78,7 @@ from .price_resolution import (
     PRICE_RESOLUTION_QUARTER_HOUR,
     find_cheapest_consecutive_block,
 )
+from .scoring import calculate_day_score, calculate_opportunity, calculate_price_score
 from .supplier_profiles import SupplierProfile, load_supplier_profiles, supplier_profile_to_dict
 
 EUR_PER_KWH = f"EUR/{UnitOfEnergy.KILO_WATT_HOUR}"
@@ -256,6 +259,8 @@ def _all_in_entries(data: PriceData, entry: ConfigEntry) -> list:
 
 def _analysis_value(key: str, data: PriceData, now: datetime, entry: ConfigEntry, runtime: dict[str, Any]) -> Any:
     prices = _all_in_entries(data, entry)
+    if key.startswith("v2:"):
+        return _v2_data(key.removeprefix("v2:"), data, now, entry)["state"]
     if key.startswith("forecast_"):
         return average_next_period(prices, now, int(key.removeprefix("forecast_")))
     trend = trend_for_prices(
@@ -303,6 +308,86 @@ def _analysis_value(key: str, data: PriceData, now: datetime, entry: ConfigEntry
     return None
 
 
+def _v2_data(
+    key: str,
+    data: PriceData,
+    now: datetime,
+    entry: ConfigEntry,
+    language: str = "en",
+) -> dict[str, Any]:
+    """Return state and attributes for an EnerPrice v2 sensor."""
+    all_in = _all_in_entries(data, entry)
+    market_current = current_price(data.result.prices, now)
+    all_in_current = current_price(all_in, now)
+    score = calculate_price_score(all_in_current, all_in)
+    _, rating = price_ratings(all_in_current, all_in)
+    trend = trend_for_prices(all_in, now)
+    stats = volatility(all_in)
+    if key == "price_score":
+        return {"state": score["score"], **score}
+    if key == "price_advisor":
+        advice = build_price_advice(
+            current_price=market_current,
+            all_in_price=all_in_current,
+            score=score,
+            rating=rating,
+            trend=trend["trend"],
+            volatility=stats["level"],
+            language=language,
+        )
+        return {"state": advice["state"], **advice}
+    if key in {"today_score", "tomorrow_score"}:
+        selected = (
+            all_in[: len(data.result.prices_today)]
+            if key == "today_score"
+            else all_in[len(data.result.prices_today) :]
+        )
+        result = calculate_day_score(selected, all_in, language)
+        return {"state": result["state"], **result}
+    if key == "energy_opportunity":
+        result = calculate_opportunity(all_in, language)
+        return {"state": result["state"], **result}
+    sell_prices = _sell_entries(data, entry)
+    if not sell_prices:
+        return {"state": None}
+    if key == "best_export_period":
+        best = max(sell_prices, key=lambda item: item.price)
+        return {"state": best.time, "price": best.price}
+    if key == "worst_export_period":
+        worst = min(sell_prices, key=lambda item: item.price)
+        return {"state": worst.time, "price": worst.price}
+    sell_current = current_price(sell_prices, now)
+    export_score = calculate_price_score(-sell_current if sell_current is not None else None, [
+        type(item)(item.time, -item.price) for item in sell_prices
+    ])
+    label = export_score["score_label"] or "normal"
+    recommendation = (
+        (
+            "Lever beschikbare zonne-energie nu terug."
+            if label in {"excellent", "good"}
+            else "Gebruik energie zelf of stel batterijteruglevering uit."
+        )
+        if language.startswith("nl")
+        else (
+            "Export available solar energy now."
+            if label in {"excellent", "good"}
+            else "Prefer self-consumption or delay battery export."
+        )
+    )
+    return {
+        "state": label,
+        "current_sell_price": sell_current,
+        "recommendation": recommendation,
+        **export_score,
+    }
+
+
+def _sell_entries(data: PriceData, entry: ConfigEntry) -> list:
+    profile = _selected_supplier_profile(entry)
+    fee = calculate_supplier_export_fee(profile, _vat(entry))
+    return [type(item)(item.time, item.price * (1 + _vat(entry)) - fee) for item in data.result.prices]
+
+
 def _periods(data: PriceData, entry: ConfigEntry, runtime: dict[str, Any], *, peak: bool):
     duration_key = CONF_PEAK_PERIOD_DURATION if peak else CONF_BEST_PERIOD_DURATION
     flex_key = CONF_PEAK_PERIOD_FLEX if peak else CONF_BEST_PERIOD_FLEX
@@ -323,17 +408,49 @@ def _advanced_sensor(
     analysis_key: str | None = None,
     unit: str | None = None,
     timestamp: bool = False,
+    options: list[str] | None = None,
 ) -> NLPriceSensorDescription:
     return NLPriceSensorDescription(
         key=key,
         translation_key=key,
         native_unit_of_measurement=unit,
-        device_class=SensorDeviceClass.TIMESTAMP if timestamp else None,
+        device_class=(
+            SensorDeviceClass.ENUM
+            if options
+            else SensorDeviceClass.TIMESTAMP
+            if timestamp
+            else None
+        ),
+        options=options,
         state_class=SensorStateClass.MEASUREMENT if unit and unit != "%" and unit != "min" else None,
         suggested_display_precision=4 if unit == EUR_PER_KWH else None,
         entity_registry_enabled_default=False,
         value_fn=lambda data, now, entry: None,
         analysis_key=analysis_key or key,
+    )
+
+
+def _v2_sensor(
+    key: str,
+    *,
+    enabled: bool = False,
+    timestamp: bool = False,
+    options: list[str] | None = None,
+) -> NLPriceSensorDescription:
+    return NLPriceSensorDescription(
+        key=key,
+        translation_key=key,
+        device_class=(
+            SensorDeviceClass.ENUM
+            if options
+            else SensorDeviceClass.TIMESTAMP
+            if timestamp
+            else None
+        ),
+        options=options,
+        entity_registry_enabled_default=enabled,
+        value_fn=lambda data, now, entry: None,
+        analysis_key=f"v2:{key}",
     )
 
 
@@ -491,14 +608,26 @@ SENSORS: tuple[NLPriceSensorDescription, ...] = (
         )
         for hours in (1, 2, 3, 4, 6, 8, 12, 24)
     ),
-    _advanced_sensor("current_price_trend", analysis_key="trend"),
+    _advanced_sensor(
+        "current_price_trend",
+        analysis_key="trend",
+        options=["strongly_falling", "falling", "stable", "rising", "strongly_rising"],
+    ),
     _advanced_sensor("next_trend_change_time", analysis_key="trend_change", timestamp=True),
-    _advanced_sensor("price_trajectory", analysis_key="trajectory"),
-    _advanced_sensor("price_rating", analysis_key="rating_3"),
-    _advanced_sensor("price_level", analysis_key="rating_5"),
-    _advanced_sensor("volatility_today"),
-    _advanced_sensor("volatility_tomorrow"),
-    _advanced_sensor("volatility_next_24h"),
+    _advanced_sensor(
+        "price_trajectory",
+        analysis_key="trajectory",
+        options=["strongly_falling", "falling", "stable", "rising", "strongly_rising"],
+    ),
+    _advanced_sensor("price_rating", analysis_key="rating_3", options=["low", "normal", "high"]),
+    _advanced_sensor(
+        "price_level",
+        analysis_key="rating_5",
+        options=["very_cheap", "cheap", "normal", "expensive", "very_expensive"],
+    ),
+    _advanced_sensor("volatility_today", options=["low", "moderate", "high", "very_high"]),
+    _advanced_sensor("volatility_tomorrow", options=["low", "moderate", "high", "very_high"]),
+    _advanced_sensor("volatility_next_24h", options=["low", "moderate", "high", "very_high"]),
     _advanced_sensor("best_price_period_start", analysis_key="best:start", timestamp=True),
     _advanced_sensor("best_price_period_end", analysis_key="best:end", timestamp=True),
     _advanced_sensor("best_price_period_remaining_minutes", analysis_key="best:remaining", unit="min"),
@@ -509,6 +638,21 @@ SENSORS: tuple[NLPriceSensorDescription, ...] = (
     _advanced_sensor("peak_price_period_remaining_minutes", analysis_key="peak:remaining", unit="min"),
     _advanced_sensor("peak_price_period_progress_percent", analysis_key="peak:progress", unit="%"),
     _advanced_sensor("next_peak_price_period_start", analysis_key="peak:next_start", timestamp=True),
+    _v2_sensor("price_advisor", enabled=True, options=["excellent", "good", "neutral", "avoid", "critical"]),
+    _v2_sensor("price_score", enabled=True),
+    _v2_sensor("today_score", options=["excellent", "good", "normal", "expensive", "volatile"]),
+    _v2_sensor("tomorrow_score", options=["excellent", "good", "normal", "expensive", "volatile"]),
+    _v2_sensor(
+        "export_advisor",
+        options=["excellent", "good", "normal", "expensive", "very_expensive"],
+    ),
+    _v2_sensor("best_export_period", timestamp=True),
+    _v2_sensor("worst_export_period", timestamp=True),
+    _v2_sensor(
+        "energy_opportunity",
+        enabled=True,
+        options=["none", "small", "medium", "high", "exceptional"],
+    ),
 )
 
 
@@ -520,12 +664,12 @@ async def async_setup_entry(
     """Set up sensors."""
     coordinator: NLDayAheadPricesCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities = [NLDayAheadPriceSensor(coordinator, entry, description) for description in SENSORS]
-    _LOGGER.info("Adding %s NL Day Ahead Prices sensor entities", len(entities))
+    _LOGGER.info("Adding %s EnerPrice sensor entities", len(entities))
     async_add_entities(entities)
 
 
 class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], SensorEntity):
-    """NL Day Ahead Prices sensor."""
+    """EnerPrice sensor."""
 
     entity_description: NLPriceSensorDescription
     _attr_has_entity_name = True
@@ -542,9 +686,16 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "NL Day Ahead Prices",
-            "manufacturer": "NL Day Ahead Prices",
+            "name": "EnerPrice",
+            "manufacturer": "EnerPrice",
         }
+
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Return stable v2 object IDs while preserving all v1 naming."""
+        if self.entity_description.analysis_key and self.entity_description.analysis_key.startswith("v2:"):
+            return f"nl_day_ahead_{self.entity_description.key}"
+        return f"nl_day_ahead_prices_{self.entity_description.key}"
 
     @property
     def native_value(self) -> Any:
@@ -552,13 +703,28 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
         if self.coordinator.data is None:
             return None
         if self.entity_description.analysis_key:
-            value = _analysis_value(
-                self.entity_description.analysis_key,
-                self.coordinator.data,
-                dt_util.now(),
-                self.entry,
-                self.coordinator.runtime_options,
-            )
+            if self.entity_description.analysis_key.startswith("v2:"):
+                key = self.entity_description.analysis_key.removeprefix("v2:")
+                language = self.coordinator.hass.config.language
+                result = self.coordinator.cached_analysis(
+                    f"v2:{language}:{key}",
+                    lambda: _v2_data(
+                        key,
+                        self.coordinator.data,
+                        dt_util.now(),
+                        self.entry,
+                        language,
+                    ),
+                )
+                value = result["state"]
+            else:
+                value = _analysis_value(
+                    self.entity_description.analysis_key,
+                    self.coordinator.data,
+                    dt_util.now(),
+                    self.entry,
+                    self.coordinator.runtime_options,
+                )
         else:
             value = self.entity_description.value_fn(self.coordinator.data, dt_util.now(), self.entry)
         return round(value, 6) if isinstance(value, float) else value
@@ -670,6 +836,17 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
                 base.update(volatility(all_in_entries[len(data.result.prices_today) :]))
             else:
                 base.update(volatility([item for item in all_in_entries if now <= item.time < now + timedelta(hours=24)]))
+        if self.entity_description.analysis_key and self.entity_description.analysis_key.startswith("v2:"):
+            key = self.entity_description.analysis_key.removeprefix("v2:")
+            language = self.coordinator.hass.config.language
+            v2_attributes = dict(
+                self.coordinator.cached_analysis(
+                    f"v2:{language}:{key}",
+                    lambda: _v2_data(key, data, now, self.entry, language),
+                )
+            )
+            v2_attributes.pop("state", None)
+            base.update(v2_attributes)
         return base
 
 

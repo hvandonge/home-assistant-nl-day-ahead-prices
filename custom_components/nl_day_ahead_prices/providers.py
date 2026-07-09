@@ -1,4 +1,4 @@
-"""Async price providers for NL Day Ahead Prices."""
+"""Async price providers for EnerPrice."""
 
 from __future__ import annotations
 

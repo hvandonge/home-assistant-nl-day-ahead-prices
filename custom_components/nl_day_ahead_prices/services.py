@@ -29,6 +29,9 @@ EXPORT_SCHEMA = vol.Schema(
 
 def async_register_services(hass: HomeAssistant) -> None:
     """Register response services once."""
+    from .services_v2 import async_register_v2_services
+
+    async_register_v2_services(hass)
     if hass.services.has_service(DOMAIN, EXPORT_SERVICE):
         return
 
@@ -87,6 +90,9 @@ def async_unregister_services(hass: HomeAssistant) -> None:
     """Remove services when the final entry unloads."""
     hass.services.async_remove(DOMAIN, EXPORT_SERVICE)
     hass.services.async_remove(DOMAIN, CONFIG_SERVICE)
+    from .services_v2 import async_unregister_v2_services
+
+    async_unregister_v2_services(hass)
 
 
 def _coordinator(hass: HomeAssistant):

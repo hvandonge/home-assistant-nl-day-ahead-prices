@@ -1,6 +1,4 @@
 export_chart_data:
-  name: Export chart data
-  description: Export market or all-in prices for ApexCharts.
   fields:
     include_today:
       selector: {boolean: {}}
@@ -19,5 +17,178 @@ export_chart_data:
     include_peak_periods:
       selector: {boolean: {}}
 generate_apexcharts_config:
-  name: Generate ApexCharts configuration
-  description: Return a ready-to-edit ApexCharts YAML configuration.
+find_best_charging_window:
+  fields:
+    target_energy_kwh:
+      required: true
+      example: 20
+      selector: {number: {min: 0.1, max: 200, step: 0.1, unit_of_measurement: kWh}}
+    max_power_kw:
+      required: true
+      example: 11
+      selector: {number: {min: 0.1, max: 50, step: 0.1, unit_of_measurement: kW}}
+    earliest_start:
+      selector: {datetime: {}}
+    deadline:
+      required: true
+      selector: {datetime: {}}
+    price_type:
+      default: all_in
+      selector: {select: {options: [market, all_in]}}
+    require_consecutive:
+      default: true
+      selector: {boolean: {}}
+    minimum_session_minutes:
+      default: 60
+      selector: {number: {min: 15, max: 1440, step: 15, unit_of_measurement: min}}
+    allow_split_sessions:
+      default: false
+      selector: {boolean: {}}
+    round_to_resolution:
+      default: true
+      selector: {boolean: {}}
+find_best_heating_window:
+  fields:
+    duration_minutes:
+      required: true
+      example: 120
+      selector: {number: {min: 15, max: 1440, step: 15, unit_of_measurement: min}}
+    earliest_start:
+      selector: {datetime: {}}
+    deadline:
+      required: true
+      selector: {datetime: {}}
+    prefer_before_peak:
+      default: true
+      selector: {boolean: {}}
+    price_type:
+      default: all_in
+      selector: {select: {options: [market, all_in]}}
+    minimum_gap_minutes:
+      default: 0
+      selector: {number: {min: 0, max: 240, step: 15, unit_of_measurement: min}}
+find_battery_strategy:
+  fields:
+    battery_capacity_kwh:
+      required: true
+      example: 10
+      selector: {number: {min: 0.1, max: 200, step: 0.1, unit_of_measurement: kWh}}
+    current_soc_percent:
+      required: true
+      selector: {number: {min: 0, max: 100, step: 1, unit_of_measurement: "%"}}
+    min_soc_percent:
+      required: true
+      selector: {number: {min: 0, max: 100, step: 1, unit_of_measurement: "%"}}
+    max_soc_percent:
+      required: true
+      selector: {number: {min: 0, max: 100, step: 1, unit_of_measurement: "%"}}
+    charge_power_kw:
+      required: true
+      selector: {number: {min: 0.1, max: 50, step: 0.1, unit_of_measurement: kW}}
+    discharge_power_kw:
+      required: true
+      selector: {number: {min: 0.1, max: 50, step: 0.1, unit_of_measurement: kW}}
+    roundtrip_efficiency_percent:
+      default: 90
+      selector: {number: {min: 50, max: 100, step: 1, unit_of_measurement: "%"}}
+    price_type:
+      default: all_in
+      selector: {select: {options: [market, all_in]}}
+    allow_grid_charge:
+      default: true
+      selector: {boolean: {}}
+    allow_export:
+      default: false
+      selector: {boolean: {}}
+find_best_export_window:
+  fields:
+    expected_export_kwh:
+      example: 5
+      selector: {number: {min: 0, max: 200, step: 0.1, unit_of_measurement: kWh}}
+    duration_minutes:
+      default: 60
+      selector: {number: {min: 15, max: 1440, step: 15, unit_of_measurement: min}}
+    price_type:
+      default: sell
+      selector: {select: {options: [market, all_in, sell]}}
+    include_supplier_sell_fee:
+      default: true
+      selector: {boolean: {}}
+find_best_appliance_window:
+  fields:
+    appliance_name:
+      required: true
+      example: Washing machine
+      selector: {text: {}}
+    duration_minutes:
+      required: true
+      example: 120
+      selector: {number: {min: 15, max: 1440, step: 15, unit_of_measurement: min}}
+    earliest_start:
+      selector: {datetime: {}}
+    deadline:
+      required: true
+      selector: {datetime: {}}
+    energy_kwh:
+      selector: {number: {min: 0, max: 200, step: 0.1, unit_of_measurement: kWh}}
+    require_consecutive:
+      default: true
+      selector: {boolean: {}}
+    avoid_peak_periods:
+      default: true
+      selector: {boolean: {}}
+generate_dashboard_yaml:
+  fields:
+    dashboard_type:
+      default: full
+      selector: {select: {options: [compact, full, energy_advisor]}}
+    include_market_price:
+      default: true
+      selector: {boolean: {}}
+    include_all_in_price:
+      default: true
+      selector: {boolean: {}}
+    include_supplier_info:
+      default: true
+      selector: {boolean: {}}
+    include_best_periods:
+      default: true
+      selector: {boolean: {}}
+    include_price_advisor:
+      default: true
+      selector: {boolean: {}}
+    include_ev_planner:
+      default: false
+      selector: {boolean: {}}
+    include_battery_strategy:
+      default: false
+      selector: {boolean: {}}
+    theme:
+      default: auto
+      selector: {select: {options: [auto, light, dark]}}
+generate_automation_yaml:
+  fields:
+    automation_type:
+      required: true
+      selector:
+        select:
+          options:
+            - boiler_best_period
+            - ev_charge_before_deadline
+            - notify_expensive_period
+            - notify_cheap_period
+            - battery_charge_discharge
+            - appliance_best_window
+    target_entity:
+      required: true
+      example: switch.boiler
+      selector: {entity: {}}
+    notify_service:
+      default: notify.notify
+      selector: {text: {}}
+    duration_minutes:
+      default: 120
+      selector: {number: {min: 15, max: 1440, step: 15, unit_of_measurement: min}}
+    deadline:
+      example: "07:00:00"
+      selector: {text: {}}

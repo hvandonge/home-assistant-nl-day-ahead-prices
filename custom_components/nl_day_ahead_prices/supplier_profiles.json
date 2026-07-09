@@ -16,7 +16,17 @@
     ],
     "default_price_resolution_before_change": "hourly",
     "last_verified": "2026-07-03",
-    "source_url": "https://www.zonneplan.nl/blog/kwartierprijzen-bij-zonneplan"
+    "source_url": "https://www.zonneplan.nl/blog/kwartierprijzen-bij-zonneplan",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": true,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 6.25,
+    "purchase_fee_import": 0.0200,
+    "purchase_fee_export": 0.0200,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": "Quarter-hour settlement starts on 2026-08-01."
   },
   "tibber": {
     "name": "Tibber",
@@ -30,7 +40,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-03",
-    "source_url": "https://tibber.com/nl/energiecontract"
+    "source_url": "https://tibber.com/nl/energiecontract",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 5.99,
+    "purchase_fee_import": 0.0248,
+    "purchase_fee_export": 0.0248,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "anwb_energie": {
     "name": "ANWB Energie",
@@ -44,7 +64,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-03",
-    "source_url": "https://www.anwb.nl/energie/actuele-tarieven"
+    "source_url": "https://www.anwb.nl/energie/actuele-tarieven",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 8.50,
+    "purchase_fee_import": 0.0180,
+    "purchase_fee_export": 0.0180,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "easy_energy": {
     "name": "EasyEnergy",
@@ -58,7 +88,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
-    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 7.00,
+    "purchase_fee_import": 0.0218,
+    "purchase_fee_export": 0.0218,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "eneco": {
     "name": "Eneco",
@@ -72,7 +112,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
-    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 7.00,
+    "purchase_fee_import": 0.0241,
+    "purchase_fee_export": 0.0241,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "vandebron": {
     "name": "Vandebron",
@@ -86,7 +136,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-03",
-    "source_url": "https://vandebron.nl/energie/energiecontract/dynamisch"
+    "source_url": "https://vandebron.nl/energie/energiecontract/dynamisch",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 6.25,
+    "purchase_fee_import": 0.0257,
+    "purchase_fee_export": 0.0257,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "vattenfall": {
     "name": "Vattenfall",
@@ -100,7 +160,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
-    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 7.95,
+    "purchase_fee_import": 0.0255,
+    "purchase_fee_export": 0.0255,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "greenchoice": {
     "name": "Greenchoice",
@@ -114,7 +184,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
-    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 7.50,
+    "purchase_fee_import": 0.0224,
+    "purchase_fee_export": 0.0224,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "energyzero": {
     "name": "EnergyZero",
@@ -128,7 +208,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
-    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 7.50,
+    "purchase_fee_import": 0.0224,
+    "purchase_fee_export": 0.0224,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "samsam": {
     "name": "SamSam",
@@ -142,7 +232,17 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": "2026-07-02",
-    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders"
+    "source_url": "https://jeroen.nl/dynamische-energie/aanbieders",
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": false,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 7.99,
+    "purchase_fee_import": 0.0339,
+    "purchase_fee_export": 0.0339,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": null
   },
   "custom": {
     "name": "Eigen leverancier",
@@ -156,6 +256,16 @@
     "price_resolution_changes": [],
     "default_price_resolution_before_change": null,
     "last_verified": null,
-    "source_url": null
+    "source_url": null,
+    "profile_version": 2,
+    "supports_hourly_prices": true,
+    "supports_quarter_hour_prices": true,
+    "default_settlement_resolution": "hourly",
+    "fixed_monthly_fee_electricity": 0.0,
+    "purchase_fee_import": 0.0,
+    "purchase_fee_export": 0.0,
+    "feed_in_fee": 0.0,
+    "imbalance_fee": null,
+    "notes": "Configure contract-specific values in the integration options."
   }
 }

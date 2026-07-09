@@ -1,4 +1,4 @@
-"""Coordinator for NL Day Ahead Prices."""
+"""Coordinator for EnerPrice."""
 
 from __future__ import annotations
 
@@ -73,6 +73,7 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
         merged = {**entry.data, **entry.options}
         self.runtime_options = {key: merged.get(key, value) for key, value in RUNTIME_DEFAULTS.items()}
         self._remove_interval_listener = None
+        self.analysis_cache: dict[str, Any] = {}
 
     async def async_start(self) -> None:
         """Start exact interval-boundary state updates without an API fetch."""
@@ -84,12 +85,20 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
 
     async def _async_interval_boundary(self, now: datetime) -> None:
         """Notify entities at a market interval boundary."""
+        self.analysis_cache.clear()
         self.async_update_listeners()
 
     def update_runtime_option(self, key: str, value: Any) -> None:
         """Apply an analysis option without reloading the integration."""
         self.runtime_options[key] = value
+        self.analysis_cache.clear()
         self.async_update_listeners()
+
+    def cached_analysis(self, key: str, factory):
+        """Return a calculation cached until data, options, or interval changes."""
+        if key not in self.analysis_cache:
+            self.analysis_cache[key] = factory()
+        return self.analysis_cache[key]
 
     async def async_stop(self) -> None:
         """Stop the interval-boundary listener."""
@@ -98,6 +107,7 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
             self._remove_interval_listener = None
 
     async def _async_update_data(self) -> PriceData:
+        self.analysis_cache.clear()
         now = dt_util.now()
         today = now.date()
         tomorrow = today + timedelta(days=1)

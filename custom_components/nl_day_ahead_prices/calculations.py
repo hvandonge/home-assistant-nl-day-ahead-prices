@@ -1,4 +1,4 @@
-"""Price calculations for NL Day Ahead Prices."""
+"""Price calculations for EnerPrice."""
 
 from __future__ import annotations
 
@@ -32,6 +32,17 @@ def calculate_monthly_fee(profile: SupplierProfile | dict[str, Any] | None) -> f
     """Return monthly electricity fee."""
     normalized = normalize_supplier_profile(profile)
     return normalized.monthly_fee_electricity if normalized is not None else 0.0
+
+
+def calculate_supplier_export_fee(profile: SupplierProfile | dict[str, Any] | None, vat: float) -> float:
+    """Return export and feed-in fees including VAT in EUR/kWh."""
+    normalized = normalize_supplier_profile(profile)
+    if normalized is None:
+        return 0.0
+    export_fee = normalized.purchase_fee_export
+    if not normalized.sell_fee_includes_vat:
+        export_fee *= 1 + vat
+    return export_fee + normalized.feed_in_fee + (normalized.imbalance_fee or 0.0)
 
 
 def build_all_in_price_attributes(

@@ -1,9 +1,9 @@
-"""Constants for NL Day Ahead Prices."""
+"""Constants for EnerPrice."""
 
 from datetime import timedelta
 
 DOMAIN = "nl_day_ahead_prices"
-NAME = "NL Day Ahead Prices"
+NAME = "EnerPrice"
 
 CONF_COUNTRY = "country"
 CONF_CURRENCY = "currency"

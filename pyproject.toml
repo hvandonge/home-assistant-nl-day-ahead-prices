@@ -1,7 +1,7 @@
 [project]
 name = "home-assistant-nl-day-ahead-prices"
-version = "1.4.1"
-description = "HACS-compatible Home Assistant integration for Dutch day-ahead electricity prices"
+version = "2.0.0"
+description = "EnerPrice smart energy assistant for Dutch dynamic electricity tariffs"
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]

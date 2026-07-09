@@ -1,4 +1,4 @@
-"""Diagnostics support for NL Day Ahead Prices."""
+"""Diagnostics support for EnerPrice."""
 
 from __future__ import annotations
 
@@ -6,8 +6,10 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 
-from .const import CONF_ENTSOE_API_TOKEN, CONF_SELECTED_SUPPLIER, DOMAIN
+from .const import CONF_CHART_HELPERS, CONF_ENTSOE_API_TOKEN, CONF_SELECTED_SUPPLIER, DOMAIN
+from .sensor import _selected_supplier_profile, _v2_data
 
 
 async def async_get_config_entry_diagnostics(
@@ -21,6 +23,9 @@ async def async_get_config_entry_diagnostics(
     options.pop(CONF_ENTSOE_API_TOKEN, None)
     if data is None:
         return {"loaded": False, "options": options}
+    advisor = _v2_data("price_advisor", data, dt_util.now(), entry, hass.config.language)
+    price_score = _v2_data("price_score", data, dt_util.now(), entry)
+    supplier = _selected_supplier_profile(entry)
     return {
         "loaded": True,
         "provider_status": data.errors,
@@ -39,4 +44,23 @@ async def async_get_config_entry_diagnostics(
         },
         "options": options,
         "runtime_options": coordinator.runtime_options,
+        "advisor_status": advisor.get("state"),
+        "price_score_input": {
+            "score": price_score.get("score"),
+            "min_reference_price": price_score.get("min_reference_price"),
+            "max_reference_price": price_score.get("max_reference_price"),
+            "average_reference_price": price_score.get("average_reference_price"),
+        },
+        "selected_planning_options": {
+            "price_type": "all_in",
+            "resolution": data.result.effective_price_resolution,
+        },
+        "supplier_profile_version": supplier.profile_version,
+        "dashboard_helper_status": bool(coordinator.runtime_options[CONF_CHART_HELPERS]),
+        "resolution_status": {
+            "requested": data.result.requested_price_resolution,
+            "effective": data.result.effective_price_resolution,
+            "raw": data.result.raw_price_resolution,
+            "converted": data.result.resolution_converted,
+        },
     }

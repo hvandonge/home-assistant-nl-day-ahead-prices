@@ -1,4 +1,4 @@
-"""Supplier profile loading for NL Day Ahead Prices."""
+"""Supplier profile loading for EnerPrice."""
 
 from __future__ import annotations
 
@@ -36,6 +36,27 @@ class SupplierProfile:
     price_resolution: str = PRICE_RESOLUTION_HOURLY
     price_resolution_changes: list[dict[str, str]] | None = None
     default_price_resolution_before_change: str | None = None
+    profile_version: int = 2
+    supports_hourly_prices: bool = True
+    supports_quarter_hour_prices: bool = False
+    default_settlement_resolution: str = PRICE_RESOLUTION_HOURLY
+    fixed_monthly_fee_electricity: float = 0.0
+    purchase_fee_import: float = 0.0
+    purchase_fee_export: float = 0.0
+    feed_in_fee: float = 0.0
+    imbalance_fee: float | None = None
+    notes: str | None = None
+
+    def __post_init__(self) -> None:
+        """Populate v2 aliases for profiles constructed with the v1 schema."""
+        if self.fixed_monthly_fee_electricity == 0 and self.monthly_fee_electricity:
+            object.__setattr__(self, "fixed_monthly_fee_electricity", self.monthly_fee_electricity)
+        if self.purchase_fee_import == 0 and self.purchase_fee_electricity:
+            object.__setattr__(self, "purchase_fee_import", self.purchase_fee_electricity)
+        if self.purchase_fee_export == 0 and self.sell_fee_electricity:
+            object.__setattr__(self, "purchase_fee_export", self.sell_fee_electricity)
+        if self.price_resolution in {"quarter_hour", "date_based"}:
+            object.__setattr__(self, "supports_quarter_hour_prices", True)
 
 
 _PROFILE_CACHE: dict[str, SupplierProfile] | None = None
@@ -76,19 +97,40 @@ def normalize_supplier_profile(profile: dict[str, Any], key: str = "custom") -> 
         raise TypeError("profile must be an object")
 
     name = str(profile["name"])
-    monthly_fee = float(profile["monthly_fee_electricity"])
-    purchase_fee = float(profile["purchase_fee_electricity"])
+    monthly_fee = float(profile.get("fixed_monthly_fee_electricity", profile.get("monthly_fee_electricity", 0.0)))
+    purchase_fee = float(profile.get("purchase_fee_import", profile.get("purchase_fee_electricity", 0.0)))
     purchase_fee_unit = str(profile.get("purchase_fee_unit", PURCHASE_FEE_UNIT_EUR_PER_KWH))
     purchase_fee_includes_vat = bool(profile.get("purchase_fee_includes_vat", True))
-    sell_fee = float(profile.get("sell_fee_electricity", 0.0))
+    sell_fee = float(profile.get("purchase_fee_export", profile.get("sell_fee_electricity", 0.0)))
     sell_fee_includes_vat = bool(profile.get("sell_fee_includes_vat", True))
-    price_resolution = normalize_profile_price_resolution(profile.get("price_resolution", PRICE_RESOLUTION_HOURLY))
+    price_resolution = normalize_profile_price_resolution(
+        profile.get(
+            "price_resolution",
+            profile.get("default_settlement_resolution", PRICE_RESOLUTION_HOURLY),
+        )
+    )
     price_resolution_changes = _normalize_price_resolution_changes(profile.get("price_resolution_changes", []))
     default_before_change = profile.get("default_price_resolution_before_change")
     if default_before_change is not None:
         default_before_change = normalize_profile_price_resolution(default_before_change)
     last_verified = profile.get("last_verified")
     source_url = profile.get("source_url")
+    supports_hourly = bool(profile.get("supports_hourly_prices", True))
+    supports_quarter_hour = bool(
+        profile.get("supports_quarter_hour_prices", price_resolution in {"quarter_hour", "date_based"})
+    )
+    settlement_default = (
+        default_before_change or PRICE_RESOLUTION_HOURLY
+        if price_resolution == "date_based"
+        else price_resolution
+    )
+    settlement_resolution = normalize_profile_price_resolution(
+        profile.get("default_settlement_resolution", settlement_default)
+    )
+    feed_in_fee = float(profile.get("feed_in_fee", 0.0))
+    imbalance_fee_value = profile.get("imbalance_fee")
+    imbalance_fee = float(imbalance_fee_value) if imbalance_fee_value is not None else None
+    notes = profile.get("notes")
 
     if monthly_fee < 0:
         raise ValueError("monthly_fee_electricity must be >= 0")
@@ -115,6 +157,16 @@ def normalize_supplier_profile(profile: dict[str, Any], key: str = "custom") -> 
         default_price_resolution_before_change=default_before_change,
         last_verified=last_verified,
         source_url=source_url,
+        profile_version=int(profile.get("profile_version", 2)),
+        supports_hourly_prices=supports_hourly,
+        supports_quarter_hour_prices=supports_quarter_hour,
+        default_settlement_resolution=settlement_resolution,
+        fixed_monthly_fee_electricity=monthly_fee,
+        purchase_fee_import=purchase_fee,
+        purchase_fee_export=sell_fee,
+        feed_in_fee=feed_in_fee,
+        imbalance_fee=imbalance_fee,
+        notes=str(notes) if notes is not None else None,
     )
 
 
@@ -134,6 +186,16 @@ def supplier_profile_to_dict(profile: SupplierProfile) -> dict[str, Any]:
         "default_price_resolution_before_change": profile.default_price_resolution_before_change,
         "last_verified": profile.last_verified,
         "source_url": profile.source_url,
+        "profile_version": profile.profile_version,
+        "supports_hourly_prices": profile.supports_hourly_prices,
+        "supports_quarter_hour_prices": profile.supports_quarter_hour_prices,
+        "default_settlement_resolution": profile.default_settlement_resolution,
+        "fixed_monthly_fee_electricity": profile.fixed_monthly_fee_electricity,
+        "purchase_fee_import": profile.purchase_fee_import,
+        "purchase_fee_export": profile.purchase_fee_export,
+        "feed_in_fee": profile.feed_in_fee,
+        "imbalance_fee": profile.imbalance_fee,
+        "notes": profile.notes,
     }
 
 

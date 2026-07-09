@@ -1,6 +1,31 @@
 # Changelog
 
-All notable changes to **NL Day Ahead Prices** are documented here.
+All notable changes to **EnerPrice** are documented here.
+
+## v2.0.0 - EnerPrice branding
+
+### Added
+
+- New EnerPrice branding and central Price Advisor.
+- Renamed the integration display name to EnerPrice.
+- Added new logo and brand assets.
+- Kept the integration domain `nl_day_ahead_prices` for backwards
+  compatibility.
+- Existing entities, services, and automations continue to work.
+- Robust 0-100 Price Score, Today Score, and Tomorrow Score.
+- EV charging, boiler, appliance, battery, and solar export planners.
+- Energy Opportunity and optional cheap/expensive/opportunity binary sensors.
+- Lovelace dashboard and automation YAML generators.
+- Supplier profile schema v2 with import, export, feed-in, settlement, and
+  capability metadata.
+- Expanded diagnostics and cached v2 calculations.
+
+### Compatibility
+
+- The integration domain remains `nl_day_ahead_prices`.
+- Existing v1.x entities, unique IDs, price attributes, and services remain
+  available.
+- New advanced entities are disabled by default where appropriate.
 
 ## v1.4.1 - 2026-07-09
 

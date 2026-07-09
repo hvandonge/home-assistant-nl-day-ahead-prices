@@ -1,4 +1,4 @@
-"""Price resolution helpers for NL Day Ahead Prices."""
+"""Price resolution helpers for EnerPrice."""
 
 from __future__ import annotations
 

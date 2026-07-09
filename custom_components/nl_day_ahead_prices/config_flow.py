@@ -1,4 +1,4 @@
-"""Config and options flow for NL Day Ahead Prices."""
+"""Config and options flow for EnerPrice."""
 
 from __future__ import annotations
 
