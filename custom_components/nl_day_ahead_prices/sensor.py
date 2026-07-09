@@ -32,6 +32,7 @@ from .const import (
     CONF_ALLOW_PEAK_RELAXATION,
     CONF_BEST_PERIOD_DURATION,
     CONF_BEST_PERIOD_FLEX,
+    CONF_CHART_HELPERS,
     CONF_CUSTOM_MONTHLY_FEE_ELECTRICITY,
     CONF_CUSTOM_PURCHASE_FEE_ELECTRICITY,
     CONF_CUSTOM_PURCHASE_FEE_INCLUDES_VAT,
@@ -647,9 +648,10 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
             "day_max": day_stats.get("max_price"),
             "day_average": day_stats.get("average_price"),
             "day_median": day_stats.get("median_price"),
-            "best_periods": [period.as_dict() for period in best_periods],
-            "peak_periods": [period.as_dict() for period in peak_periods],
         }
+        if self.coordinator.runtime_options[CONF_CHART_HELPERS]:
+            base["best_periods"] = [period.as_dict() for period in best_periods]
+            base["peak_periods"] = [period.as_dict() for period in peak_periods]
         if not self.coordinator.runtime_options[CONF_EXTENDED_ATTRIBUTES]:
             return {
                 key: base[key]

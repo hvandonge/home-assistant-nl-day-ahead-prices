@@ -245,7 +245,8 @@ as product inspiration.
 The device page contains `number` controls for best/peak duration, flexibility,
 minimum gap, and trend thresholds. Switches control period relaxation,
 extended attributes, and chart helpers. Changes apply immediately without a
-Home Assistant restart.
+Home Assistant restart. Enabling chart helpers adds the calculated
+`best_periods` and `peak_periods` arrays used by the generated ApexCharts card.
 
 ### Services
 

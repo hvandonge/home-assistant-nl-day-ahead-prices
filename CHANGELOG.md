@@ -2,6 +2,14 @@
 
 All notable changes to **NL Day Ahead Prices** are documented here.
 
+## v1.4.1 - 2026-07-09
+
+### Changed
+
+- Connected the chart helper switch to the calculated `best_periods` and
+  `peak_periods` attributes.
+- Made generated ApexCharts configurations tolerate disabled chart helpers.
+
 ## v1.4.0 - 2026-07-09
 
 ### Added

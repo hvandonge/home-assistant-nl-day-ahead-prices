@@ -38,13 +38,13 @@ series:
     type: area
     color: "#2e7d32"
     data_generator: |
-      return entity.attributes.best_periods.flatMap(period =>
+      return (entity.attributes.best_periods || []).flatMap(period =>
         period.prices.map(p => [new Date(p.time).getTime(), p.price]));
   - entity: {entity_id}
     name: Peak period
     type: area
     color: "#c62828"
     data_generator: |
-      return entity.attributes.peak_periods.flatMap(period =>
+      return (entity.attributes.peak_periods || []).flatMap(period =>
         period.prices.map(p => [new Date(p.time).getTime(), p.price]));
 """
