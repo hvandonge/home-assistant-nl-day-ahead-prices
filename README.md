@@ -1,13 +1,8 @@
+<p align="center">
+  <img src="brand/enerprice-header.png" alt="EnerPrice - Dynamic Energy Prices for Home Assistant" width="100%">
+</p>
+
 # EnerPrice
-
-<p align="center">
-  <img src="brand/logo.png" alt="EnerPrice logo" width="180">
-</p>
-
-<p align="center">
-  <strong>EnerPrice</strong><br>
-  Dynamic energy prices for Home Assistant
-</p>
 
 [![GitHub Release](https://img.shields.io/github/v/release/LenFaki/home-assistant-nl-day-ahead-prices?style=flat-square)](https://github.com/LenFaki/home-assistant-nl-day-ahead-prices/releases)
 [![Status](https://img.shields.io/badge/status-stable-green.svg?style=flat-square)](https://github.com/LenFaki/home-assistant-nl-day-ahead-prices)
