@@ -14,7 +14,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .cache import cache_is_valid
+from .cache import cache_is_valid, cache_needs_roll
 from .const import (
     CACHE_VERSION,
     CONF_COUNTRY,
@@ -182,21 +182,34 @@ class NLDayAheadPricesCoordinator(DataUpdateCoordinator[PriceData]):
 
     async def _async_load_cached(self) -> PriceData | None:
         cached = await self.store.async_load()
-        now = dt_util.now()
-        if not cache_is_valid(cached, now):
+        if cached is None:
             return None
+        now = dt_util.now()
+        if cache_is_valid(cached, now):
+            return self._price_data_from_cache(cached, now, rolled=False)
+        if cache_needs_roll(cached, now):
+            # Cache was written yesterday, but its "tomorrow" prices are
+            # today's: bridge the midnight gap instead of going unavailable.
+            return self._price_data_from_cache(cached, now, rolled=True)
+        return None
+
+    def _price_data_from_cache(self, cached: dict[str, Any], now: datetime, *, rolled: bool) -> PriceData | None:
+        today_key, tomorrow_key = ("prices_tomorrow", None) if rolled else ("prices_today", "prices_tomorrow")
+        raw_today_key, raw_tomorrow_key = (
+            ("raw_prices_tomorrow", None) if rolled else ("raw_prices_today", "raw_prices_tomorrow")
+        )
         result = ProviderResult(
             provider=PROVIDER_CACHE,
-            prices_today=_deserialize_prices(cached.get("prices_today", [])),
-            prices_tomorrow=_deserialize_prices(cached.get("prices_tomorrow", [])),
-            raw_prices_today=_deserialize_prices(cached.get("raw_prices_today", [])),
-            raw_prices_tomorrow=_deserialize_prices(cached.get("raw_prices_tomorrow", [])),
+            prices_today=_deserialize_prices(cached.get(today_key, [])),
+            prices_tomorrow=_deserialize_prices(cached.get(tomorrow_key, [])) if tomorrow_key else [],
+            raw_prices_today=_deserialize_prices(cached.get(raw_today_key, [])),
+            raw_prices_tomorrow=_deserialize_prices(cached.get(raw_tomorrow_key, [])) if raw_tomorrow_key else [],
             raw_price_resolution=cached.get("raw_price_resolution", "hourly"),
             requested_price_resolution=cached.get("requested_price_resolution", DEFAULT_PRICE_RESOLUTION),
             effective_price_resolution=cached.get("effective_price_resolution", "hourly"),
             resolution_converted=bool(cached.get("resolution_converted", False)),
-            raw_today=cached.get("raw_today"),
-            raw_tomorrow=cached.get("raw_tomorrow"),
+            raw_today=None if rolled else cached.get("raw_today"),
+            raw_tomorrow=None if rolled else cached.get("raw_tomorrow"),
         )
         if not result.prices_today:
             return None

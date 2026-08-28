@@ -11,7 +11,7 @@ from custom_components.nl_day_ahead_prices.analysis.periods import active_and_ne
 from custom_components.nl_day_ahead_prices.analysis.rating import price_ratings
 from custom_components.nl_day_ahead_prices.analysis.trend import classify_trend, trend_for_prices
 from custom_components.nl_day_ahead_prices.analysis.volatility import volatility
-from custom_components.nl_day_ahead_prices.cache import cache_is_valid
+from custom_components.nl_day_ahead_prices.cache import cache_is_valid, cache_needs_roll
 from custom_components.nl_day_ahead_prices.models import PriceEntry, current_price, next_hour_price
 
 
@@ -94,6 +94,23 @@ def test_cache_validation() -> None:
     assert cache_is_valid(valid, now)
     assert not cache_is_valid({**valid, "local_date": "2026-07-08"}, now)
     assert not cache_is_valid({**valid, "prices_today": []}, now)
+
+
+def test_cache_needs_roll_bridges_the_midnight_gap() -> None:
+    just_after_midnight = datetime(2026, 7, 10, 0, 20, tzinfo=timezone.utc)
+    yesterdays_cache = {
+        "local_date": "2026-07-09",
+        "prices_today": [{"time": "2026-07-09T12:00:00+00:00", "price": 0.1}],
+        "prices_tomorrow": [{"time": "2026-07-10T00:00:00+00:00", "price": 0.2}],
+    }
+    # Same-day validity no longer holds once the date has rolled over...
+    assert not cache_is_valid(yesterdays_cache, just_after_midnight)
+    # ...but yesterday's "tomorrow" prices are today's, so a roll is possible.
+    assert cache_needs_roll(yesterdays_cache, just_after_midnight)
+    # A cache from further in the past, or with no tomorrow prices, can't bridge.
+    assert not cache_needs_roll({**yesterdays_cache, "local_date": "2026-07-08"}, just_after_midnight)
+    assert not cache_needs_roll({**yesterdays_cache, "prices_tomorrow": []}, just_after_midnight)
+    assert not cache_needs_roll(None, just_after_midnight)
 
 
 def test_chart_export_conversion() -> None:

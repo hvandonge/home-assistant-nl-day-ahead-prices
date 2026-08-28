@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 from xml.etree import ElementTree
+from zoneinfo import ZoneInfo
 
 from aiohttp import ClientError, ClientSession
 
@@ -26,6 +27,10 @@ from .price_resolution import infer_price_resolution
 _LOGGER = logging.getLogger(__name__)
 
 ENTSOE_NL_DOMAIN = "10YNL----------L"
+# The NL day-ahead market runs on Europe/Amsterdam local days (CET/CEST), not
+# UTC calendar days. Bucketing or windowing by UTC date instead of this zone
+# drops or misplaces the first 1-2 hours of every local day.
+NL_ZONE = ZoneInfo("Europe/Amsterdam")
 
 
 class ProviderError(Exception):
@@ -59,8 +64,11 @@ class BasePriceProvider(ABC):
                 async with asyncio.timeout(REQUEST_TIMEOUT):
                     async with self.session.get(url, params=params) as response:
                         response.raise_for_status()
+                        # ValueError also covers json.JSONDecodeError, which aiohttp
+                        # raises (not a ClientError) when a provider answers with an
+                        # empty/non-JSON body, e.g. a 204 for a not-yet-published day.
                         return await response.json(content_type=None)
-            except (TimeoutError, ClientError) as err:
+            except (TimeoutError, ClientError, ValueError) as err:
                 last_error = err
                 if attempt + 1 < REQUEST_RETRIES:
                     await asyncio.sleep(1)
@@ -119,8 +127,10 @@ class EnergyChartsProvider(BasePriceProvider):
     key = PROVIDER_ENERGY_CHARTS
 
     async def async_fetch(self, today: date, tomorrow: date) -> ProviderResult:
-        start = datetime.combine(today, time.min).isoformat()
-        end = datetime.combine(tomorrow + timedelta(days=1), time.min).isoformat()
+        # Use aware NL-local midnights (not naive UTC-ish ones) so the request
+        # window actually covers the full local days being asked for.
+        start = datetime.combine(today, time.min, tzinfo=NL_ZONE).isoformat()
+        end = datetime.combine(tomorrow + timedelta(days=1), time.min, tzinfo=NL_ZONE).isoformat()
         raw = await self._request_json(
             "https://api.energy-charts.info/price",
             {"bzn": self.country, "start": start, "end": end},
@@ -237,7 +247,10 @@ def parse_energy_charts(payload: Any, target_day: date) -> list[PriceEntry]:
             if isinstance(timestamp, (int, float))
             else datetime.fromisoformat(timestamp)
         )
-        if dt.date() == target_day:
+        # Bucket by NL local date, not the UTC date of the timestamp: the first
+        # 1-2 hours of every local day fall on the previous UTC calendar date
+        # and would otherwise be dropped from that day's prices.
+        if dt.astimezone(NL_ZONE).date() == target_day:
             prices.append(PriceEntry(dt, convert_to_eur_kwh(float(value), "EUR/MWh")))
     return sorted(prices, key=lambda entry: entry.time)
 
