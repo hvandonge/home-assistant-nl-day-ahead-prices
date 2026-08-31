@@ -674,6 +674,37 @@ class NLDayAheadPriceSensor(CoordinatorEntity[NLDayAheadPricesCoordinator], Sens
     entity_description: NLPriceSensorDescription
     _attr_has_entity_name = True
 
+    # These attributes hold full price series / raw provider payloads that are
+    # rebuilt on every coordinator refresh. They routinely push the serialized
+    # attribute dict past the recorder's 16 KiB limit, which makes the recorder
+    # drop *all* attributes for the state. Keeping them out of the recorder lets
+    # the scalar attributes (trend, ratings, day stats, ...) keep their history
+    # while the arrays stay available live for templates and chart cards.
+    _unrecorded_attributes = frozenset(
+        {
+            "prices",
+            "prices_today",
+            "prices_tomorrow",
+            "raw_prices",
+            "raw_prices_today",
+            "raw_prices_tomorrow",
+            "all_in_prices_today",
+            "all_in_prices_tomorrow",
+            "raw_today",
+            "raw_tomorrow",
+            "supplier_profile",
+            "best_periods",
+            "peak_periods",
+            "cheapest_15_minutes",
+            "cheapest_30_minutes",
+            "cheapest_45_minutes",
+            "cheapest_1_hour",
+            "cheapest_2_hours",
+            "cheapest_3_hours",
+            "cheapest_4_hours",
+        }
+    )
+
     def __init__(
         self,
         coordinator: NLDayAheadPricesCoordinator,
