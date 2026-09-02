@@ -67,7 +67,10 @@ class BasePriceProvider(ABC):
                         # ValueError also covers json.JSONDecodeError, which aiohttp
                         # raises (not a ClientError) when a provider answers with an
                         # empty/non-JSON body, e.g. a 204 for a not-yet-published day.
-                        return await response.json(content_type=None)
+                        data = await response.json(content_type=None)
+                        if data is None:
+                            raise ValueError("empty JSON response")
+                        return data
             except (TimeoutError, ClientError, ValueError) as err:
                 last_error = err
                 if attempt + 1 < REQUEST_RETRIES:
