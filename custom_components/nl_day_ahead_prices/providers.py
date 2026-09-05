@@ -100,16 +100,9 @@ class NordPoolProvider(BasePriceProvider):
 
     async def async_fetch(self, today: date, tomorrow: date) -> ProviderResult:
         today_raw = await self._fetch_day(today)
+        tomorrow_raw = await self._fetch_day(tomorrow)
         prices_today = parse_nord_pool(today_raw, self.country)
-
-        tomorrow_raw: Any = None
-        prices_tomorrow: list[PriceEntry] = []
-        try:
-            tomorrow_raw = await self._fetch_day(tomorrow)
-            prices_tomorrow = parse_nord_pool(tomorrow_raw, self.country)
-        except ProviderError as err:
-            _LOGGER.debug("Nord Pool tomorrow prices not yet available: %s", err)
-
+        prices_tomorrow = parse_nord_pool(tomorrow_raw, self.country)
         return ProviderResult(
             provider=self.key,
             prices_today=prices_today,
