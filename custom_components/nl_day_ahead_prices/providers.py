@@ -100,9 +100,16 @@ class NordPoolProvider(BasePriceProvider):
 
     async def async_fetch(self, today: date, tomorrow: date) -> ProviderResult:
         today_raw = await self._fetch_day(today)
-        tomorrow_raw = await self._fetch_day(tomorrow)
         prices_today = parse_nord_pool(today_raw, self.country)
-        prices_tomorrow = parse_nord_pool(tomorrow_raw, self.country)
+
+        tomorrow_raw: Any = None
+        prices_tomorrow: list[PriceEntry] = []
+        try:
+            tomorrow_raw = await self._fetch_day(tomorrow)
+            prices_tomorrow = parse_nord_pool(tomorrow_raw, self.country)
+        except ProviderError as err:
+            _LOGGER.debug("Nord Pool tomorrow prices not yet available: %s", err)
+
         return ProviderResult(
             provider=self.key,
             prices_today=prices_today,
@@ -207,10 +214,15 @@ async def async_fetch_with_fallback(
             result = await provider.async_fetch(today, tomorrow)
             if not result.prices_today:
                 raise ProviderError("provider returned no prices for today")
-            return result, index > 0, errors
         except Exception as err:  # noqa: BLE001 - provider isolation is intentional.
-            _LOGGER.warning("Provider %s failed: %s", provider.key, err)
+            _LOGGER.debug("Provider %s failed: %s", provider.key, err)
             errors[provider.key] = str(err)
+            continue
+        if index > 0:
+            failed = ", ".join(f"{key} ({reason})" for key, reason in errors.items())
+            _LOGGER.info("Falling back to provider %s after failures: %s", provider.key, failed)
+        return result, index > 0, errors
+    _LOGGER.warning("All price providers failed: %s", errors)
     raise ProviderError("all providers failed")
 
 

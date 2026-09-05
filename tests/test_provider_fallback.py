@@ -3,7 +3,12 @@ from datetime import date, datetime
 import pytest
 
 from custom_components.nl_day_ahead_prices.models import PriceEntry, ProviderResult
-from custom_components.nl_day_ahead_prices.providers import BasePriceProvider, ProviderError, async_fetch_with_fallback
+from custom_components.nl_day_ahead_prices.providers import (
+    BasePriceProvider,
+    NordPoolProvider,
+    ProviderError,
+    async_fetch_with_fallback,
+)
 
 
 class FailingProvider(BasePriceProvider):
@@ -41,4 +46,27 @@ async def test_provider_fallback_uses_second_provider() -> None:
 async def test_provider_fallback_raises_when_every_provider_fails() -> None:
     with pytest.raises(ProviderError):
         await async_fetch_with_fallback([FailingProvider(None)], date(2026, 7, 2), date(2026, 7, 3))
+
+
+@pytest.mark.asyncio
+async def test_nord_pool_tolerates_unpublished_tomorrow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Nord Pool only publishes tomorrow's prices in the afternoon; that
+    alone shouldn't fail the whole provider and trigger a fallback."""
+    provider = NordPoolProvider(session=None, country="NL", currency="EUR")
+
+    async def fake_fetch_day(day: date) -> dict:
+        if day == date(2026, 7, 3):
+            raise ProviderError("empty JSON response")
+        return {
+            "multiAreaEntries": [
+                {"deliveryStart": "2026-07-02T00:00:00+02:00", "entryPerArea": {"NL": 100}}
+            ]
+        }
+
+    monkeypatch.setattr(provider, "_fetch_day", fake_fetch_day)
+
+    result = await provider.async_fetch(date(2026, 7, 2), date(2026, 7, 3))
+
+    assert len(result.prices_today) == 1
+    assert result.prices_tomorrow == []
 
